@@ -1,0 +1,3 @@
+..\Core\Src\aic3201.c:23:19:USER_AIC3X_Init	16	static
+..\Core\Src\aic3201.c:41:19:USER_AIC3X_HwReset	16	static
+..\Core\Src\aic3201.c:64:19:USER_AIC3X_SwReset	40	static

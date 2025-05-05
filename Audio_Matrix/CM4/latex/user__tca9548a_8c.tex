@@ -1,0 +1,72 @@
+\hypertarget{user__tca9548a_8c}{}\doxysection{Drivers/\+User/\+Src/user\+\_\+tca9548a.c File Reference}
+\label{user__tca9548a_8c}\index{Drivers/User/Src/user\_tca9548a.c@{Drivers/User/Src/user\_tca9548a.c}}
+{\ttfamily \#include \char`\"{}user\+\_\+tca9548a.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}stdint.\+h\char`\"{}}\newline
+\doxysubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{user__tca9548a_8c_ad30f67be93f9e33873527efbc61c2a92}{I2\+C\+\_\+\+M\+U\+X\+\_\+\+B\+A\+S\+E\+\_\+\+A\+D\+DR}}~112
+\item 
+\#define \mbox{\hyperlink{user__tca9548a_8c_a428eba6b6a37f75df6053097e92da715}{I2\+C\+\_\+\+M\+U\+X\+\_\+\+T\+I\+M\+E\+O\+UT}}~1
+\item 
+\#define \mbox{\hyperlink{user__tca9548a_8c_a577e9402a318241c3fa1939b4e864c34}{I2\+C\+\_\+\+M\+U\+X\+\_\+\+R\+E\+S\+E\+T\+\_\+\+T\+I\+M\+E\+\_\+\+L\+OW}}~1
+\item 
+\#define \mbox{\hyperlink{user__tca9548a_8c_a4e8388b942d3dfc45b999fa4bda3a138}{I2\+C\+\_\+\+M\+U\+X\+\_\+\+R\+E\+S\+E\+T\+\_\+\+T\+I\+M\+E\+\_\+\+H\+I\+GH}}~0
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+H\+A\+L\+\_\+\+Status\+Type\+Def \mbox{\hyperlink{user__tca9548a_8c_ae8da13188bf18b6ccc9a8ce1cd3a4383}{U\+S\+E\+R\+\_\+\+T\+C\+A9548\+A\+\_\+\+Reset}} (\mbox{\hyperlink{user__tca9548a_8h_ae5fc591cf385c99b4ef24f536c0b543a}{T\+C\+A9548\+A\+\_\+\+Handle\+Type\+Def}} $\ast$mux)
+\item 
+H\+A\+L\+\_\+\+Status\+Type\+Def \mbox{\hyperlink{user__tca9548a_8c_aa0226dd7dd68d948f347ca28ecd69485}{U\+S\+E\+R\+\_\+\+T\+C\+A9548\+A\+\_\+\+Select}} (\mbox{\hyperlink{user__tca9548a_8h_ae5fc591cf385c99b4ef24f536c0b543a}{T\+C\+A9548\+A\+\_\+\+Handle\+Type\+Def}} $\ast$mux, uint8\+\_\+t ch)
+\item 
+H\+A\+L\+\_\+\+Status\+Type\+Def \mbox{\hyperlink{user__tca9548a_8c_a371f300b1f924329b7f49a47ee7b09f7}{U\+S\+E\+R\+\_\+\+T\+C\+A9548\+A\+\_\+\+Select\+Multi}} (\mbox{\hyperlink{user__tca9548a_8h_ae5fc591cf385c99b4ef24f536c0b543a}{T\+C\+A9548\+A\+\_\+\+Handle\+Type\+Def}} $\ast$mux, uint8\+\_\+t mask)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Macro Definition Documentation}
+\mbox{\Hypertarget{user__tca9548a_8c_ad30f67be93f9e33873527efbc61c2a92}\label{user__tca9548a_8c_ad30f67be93f9e33873527efbc61c2a92}} 
+\index{user\_tca9548a.c@{user\_tca9548a.c}!I2C\_MUX\_BASE\_ADDR@{I2C\_MUX\_BASE\_ADDR}}
+\index{I2C\_MUX\_BASE\_ADDR@{I2C\_MUX\_BASE\_ADDR}!user\_tca9548a.c@{user\_tca9548a.c}}
+\doxysubsubsection{\texorpdfstring{I2C\_MUX\_BASE\_ADDR}{I2C\_MUX\_BASE\_ADDR}}
+{\footnotesize\ttfamily \#define I2\+C\+\_\+\+M\+U\+X\+\_\+\+B\+A\+S\+E\+\_\+\+A\+D\+DR~112}
+
+\mbox{\Hypertarget{user__tca9548a_8c_a4e8388b942d3dfc45b999fa4bda3a138}\label{user__tca9548a_8c_a4e8388b942d3dfc45b999fa4bda3a138}} 
+\index{user\_tca9548a.c@{user\_tca9548a.c}!I2C\_MUX\_RESET\_TIME\_HIGH@{I2C\_MUX\_RESET\_TIME\_HIGH}}
+\index{I2C\_MUX\_RESET\_TIME\_HIGH@{I2C\_MUX\_RESET\_TIME\_HIGH}!user\_tca9548a.c@{user\_tca9548a.c}}
+\doxysubsubsection{\texorpdfstring{I2C\_MUX\_RESET\_TIME\_HIGH}{I2C\_MUX\_RESET\_TIME\_HIGH}}
+{\footnotesize\ttfamily \#define I2\+C\+\_\+\+M\+U\+X\+\_\+\+R\+E\+S\+E\+T\+\_\+\+T\+I\+M\+E\+\_\+\+H\+I\+GH~0}
+
+\mbox{\Hypertarget{user__tca9548a_8c_a577e9402a318241c3fa1939b4e864c34}\label{user__tca9548a_8c_a577e9402a318241c3fa1939b4e864c34}} 
+\index{user\_tca9548a.c@{user\_tca9548a.c}!I2C\_MUX\_RESET\_TIME\_LOW@{I2C\_MUX\_RESET\_TIME\_LOW}}
+\index{I2C\_MUX\_RESET\_TIME\_LOW@{I2C\_MUX\_RESET\_TIME\_LOW}!user\_tca9548a.c@{user\_tca9548a.c}}
+\doxysubsubsection{\texorpdfstring{I2C\_MUX\_RESET\_TIME\_LOW}{I2C\_MUX\_RESET\_TIME\_LOW}}
+{\footnotesize\ttfamily \#define I2\+C\+\_\+\+M\+U\+X\+\_\+\+R\+E\+S\+E\+T\+\_\+\+T\+I\+M\+E\+\_\+\+L\+OW~1}
+
+\mbox{\Hypertarget{user__tca9548a_8c_a428eba6b6a37f75df6053097e92da715}\label{user__tca9548a_8c_a428eba6b6a37f75df6053097e92da715}} 
+\index{user\_tca9548a.c@{user\_tca9548a.c}!I2C\_MUX\_TIMEOUT@{I2C\_MUX\_TIMEOUT}}
+\index{I2C\_MUX\_TIMEOUT@{I2C\_MUX\_TIMEOUT}!user\_tca9548a.c@{user\_tca9548a.c}}
+\doxysubsubsection{\texorpdfstring{I2C\_MUX\_TIMEOUT}{I2C\_MUX\_TIMEOUT}}
+{\footnotesize\ttfamily \#define I2\+C\+\_\+\+M\+U\+X\+\_\+\+T\+I\+M\+E\+O\+UT~1}
+
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{user__tca9548a_8c_ae8da13188bf18b6ccc9a8ce1cd3a4383}\label{user__tca9548a_8c_ae8da13188bf18b6ccc9a8ce1cd3a4383}} 
+\index{user\_tca9548a.c@{user\_tca9548a.c}!USER\_TCA9548A\_Reset@{USER\_TCA9548A\_Reset}}
+\index{USER\_TCA9548A\_Reset@{USER\_TCA9548A\_Reset}!user\_tca9548a.c@{user\_tca9548a.c}}
+\doxysubsubsection{\texorpdfstring{USER\_TCA9548A\_Reset()}{USER\_TCA9548A\_Reset()}}
+{\footnotesize\ttfamily H\+A\+L\+\_\+\+Status\+Type\+Def U\+S\+E\+R\+\_\+\+T\+C\+A9548\+A\+\_\+\+Reset (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{user__tca9548a_8h_ae5fc591cf385c99b4ef24f536c0b543a}{T\+C\+A9548\+A\+\_\+\+Handle\+Type\+Def}} $\ast$}]{mux }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{user__tca9548a_8c_aa0226dd7dd68d948f347ca28ecd69485}\label{user__tca9548a_8c_aa0226dd7dd68d948f347ca28ecd69485}} 
+\index{user\_tca9548a.c@{user\_tca9548a.c}!USER\_TCA9548A\_Select@{USER\_TCA9548A\_Select}}
+\index{USER\_TCA9548A\_Select@{USER\_TCA9548A\_Select}!user\_tca9548a.c@{user\_tca9548a.c}}
+\doxysubsubsection{\texorpdfstring{USER\_TCA9548A\_Select()}{USER\_TCA9548A\_Select()}}
+{\footnotesize\ttfamily H\+A\+L\+\_\+\+Status\+Type\+Def U\+S\+E\+R\+\_\+\+T\+C\+A9548\+A\+\_\+\+Select (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{user__tca9548a_8h_ae5fc591cf385c99b4ef24f536c0b543a}{T\+C\+A9548\+A\+\_\+\+Handle\+Type\+Def}} $\ast$}]{mux,  }\item[{uint8\+\_\+t}]{ch }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{user__tca9548a_8c_a371f300b1f924329b7f49a47ee7b09f7}\label{user__tca9548a_8c_a371f300b1f924329b7f49a47ee7b09f7}} 
+\index{user\_tca9548a.c@{user\_tca9548a.c}!USER\_TCA9548A\_SelectMulti@{USER\_TCA9548A\_SelectMulti}}
+\index{USER\_TCA9548A\_SelectMulti@{USER\_TCA9548A\_SelectMulti}!user\_tca9548a.c@{user\_tca9548a.c}}
+\doxysubsubsection{\texorpdfstring{USER\_TCA9548A\_SelectMulti()}{USER\_TCA9548A\_SelectMulti()}}
+{\footnotesize\ttfamily H\+A\+L\+\_\+\+Status\+Type\+Def U\+S\+E\+R\+\_\+\+T\+C\+A9548\+A\+\_\+\+Select\+Multi (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{user__tca9548a_8h_ae5fc591cf385c99b4ef24f536c0b543a}{T\+C\+A9548\+A\+\_\+\+Handle\+Type\+Def}} $\ast$}]{mux,  }\item[{uint8\+\_\+t}]{mask }\end{DoxyParamCaption})}
+

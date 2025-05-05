@@ -1,0 +1,605 @@
+\hypertarget{user__aic3x_8c}{}\doxysection{Drivers/\+User/\+Src/user\+\_\+aic3x.c File Reference}
+\label{user__aic3x_8c}\index{Drivers/User/Src/user\_aic3x.c@{Drivers/User/Src/user\_aic3x.c}}
+
+
+Driver for the A\+I\+C3X audio codec.  
+
+
+{\ttfamily \#include \char`\"{}user\+\_\+aic3x.\+h\char`\"{}}\newline
+\doxysubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_aa411032f848faa7d4cfde8cb780f6e12}{A\+I\+C3\+X\+\_\+\+R\+E\+S\+E\+T\+\_\+\+T\+I\+M\+E\+\_\+\+L\+OW}}~1u
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_a684e85f1369563a654c546cbf28553b0}{A\+I\+C3\+X\+\_\+\+R\+E\+S\+E\+T\+\_\+\+T\+I\+M\+E\+\_\+\+H\+I\+GH}}~0u
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_abe057f9c7da1745e5af53c097e2e30c8}{A\+I\+C3\+X\+\_\+\+B\+A\+S\+E\+\_\+\+R\+A\+T\+E\+\_\+\+M\+A\+SK}}~(1u $<$$<$ 7) 					/$\ast$$\ast$ Base rate mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_a5559374b2cfa46cdfac780f3c4b37710}{A\+I\+C3\+X\+\_\+\+R\+A\+T\+E\+\_\+\+D\+O\+U\+B\+L\+I\+N\+G\+\_\+\+M\+A\+SK}}~(0b11u $<$$<$ 5) 				/$\ast$$\ast$ Rate doubling mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_a9e15cfd9aa09bb8fd30c92fc23df1b7e}{A\+I\+C3\+X\+\_\+\+P\+L\+L\+\_\+\+Q\+\_\+\+M\+A\+SK}}~(0b1111u $<$$<$ 3) 				/$\ast$$\ast$ P\+LL Q register bit mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_ae573fafbb3dd33e6fae35407f9dd5833}{A\+I\+C3\+X\+\_\+\+P\+L\+L\+\_\+\+P\+\_\+\+M\+A\+SK}}~(0b111u) 			        /$\ast$$\ast$ P\+LL P register bit mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_ae0e790d0e108a3af85e7483ec6cb72dd}{A\+I\+C3\+X\+\_\+\+P\+L\+L\+\_\+\+J\+\_\+\+M\+A\+SK}}~(0b111111u $<$$<$ 2)			/$\ast$$\ast$ P\+LL J register bit mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_ae9eaa2fd02762aee166be8f0eda4aa47}{A\+I\+C3\+X\+\_\+\+P\+L\+L\+\_\+\+D\+\_\+\+M\+A\+SK}}~(0b11111111111111u $<$$<$ 2) 	/$\ast$$\ast$ P\+LL D register bit mask (for both of the registers combined) $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_a54ea197733d56bc80290abb887b36cfb}{A\+I\+C3\+X\+\_\+\+P\+L\+L\+\_\+\+R\+\_\+\+M\+A\+SK}}~(0b1111u)			        /$\ast$$\ast$ P\+LL R register bit mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_a98520ba43d93d2066a0d57079db04714}{A\+I\+C3\+X\+\_\+\+D\+A\+T\+A\+P\+A\+T\+H\+\_\+\+L\+E\+F\+T\+\_\+\+M\+A\+SK}}~(0b11u $<$$<$ 3) 	    		/$\ast$$\ast$ Left D\+AC data path mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_a79c872dc0ff3fb0856363afbaad9d042}{A\+I\+C3\+X\+\_\+\+D\+A\+T\+A\+P\+A\+T\+H\+\_\+\+R\+I\+G\+H\+T\+\_\+\+M\+A\+SK}}~(0b11u $<$$<$ 1) 	    		/$\ast$$\ast$ Right D\+AC data path mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_a3792bdda2359bc3347a81243e678acb6}{A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+B\+C\+L\+K\+\_\+\+D\+I\+R\+E\+C\+T\+I\+O\+N\+\_\+\+M\+A\+SK}}~(1u $<$$<$ 23)					/$\ast$$\ast$ B\+C\+LK direction mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_ad43c2e7b40f6d6463600acab14528780}{A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+W\+C\+L\+K\+\_\+\+D\+I\+R\+E\+C\+T\+I\+O\+N\+\_\+\+M\+A\+SK}}~(1u $<$$<$ 22)					/$\ast$$\ast$ W\+C\+LK direction mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_a85034c02cd47a97a8eb21322d0e6c954}{A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+D\+O\+U\+T\+\_\+\+T\+R\+I\+S\+T\+A\+T\+E\+\_\+\+M\+A\+SK}}~(1u $<$$<$ 21)					/$\ast$$\ast$ D\+O\+UT tristate mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_a528dc0f31d687cbe8684eb62f38b0294}{A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+C\+L\+K\+\_\+\+D\+R\+I\+V\+E\+\_\+\+C\+T\+R\+L\+\_\+\+M\+A\+SK}}~(1u $<$$<$ 20) 					/$\ast$$\ast$ C\+LK Drive control mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_af356d5c502f840522ac3369927b148c2}{A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+E\+F\+F\+E\+C\+T\+\_\+3\+D\+\_\+\+M\+A\+SK}}~(1u $<$$<$ 18)					/$\ast$$\ast$ 3D effect mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_a4bea4e89f13581a1d7c1ff173baf4cd6}{A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+T\+R\+A\+N\+S\+F\+E\+R\+\_\+\+M\+O\+D\+E\+\_\+\+M\+A\+SK}}~(0b11u $<$$<$ 14)				/$\ast$$\ast$ Transfer mode mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_af92bfe042536063213790e3cf79df948}{A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+W\+O\+R\+D\+\_\+\+L\+E\+N\+G\+T\+H\+\_\+\+M\+A\+SK}}~(0b11u $<$$<$ 12)				/$\ast$$\ast$ Word length mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_a7d3e2d7778f306420f0709bf14b7bb57}{A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+B\+C\+L\+K\+\_\+265\+\_\+\+C\+L\+O\+C\+K\+\_\+\+M\+O\+D\+E\+\_\+\+M\+A\+SK}}~(1u $<$$<$ 11)					/$\ast$$\ast$ B\+C\+LK 265 clock mode mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_aab04cd8f82a5f6f8dfcec97a063a9c3d}{A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+D\+A\+C\+\_\+\+R\+E\+S\+Y\+N\+C\+\_\+\+M\+A\+SK}}~(1u $<$$<$ 10)					/$\ast$$\ast$ D\+AC resync mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_a5028ae72fef23a8448bf3295e36acb94}{A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+A\+D\+C\+\_\+\+R\+E\+S\+Y\+N\+C\+\_\+\+M\+A\+SK}}~(1u $<$$<$ 9)					/$\ast$$\ast$ A\+DC resync mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_ab5c3dcb0f8344e9f3288e43dbec1b41a}{A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+R\+E\+S\+Y\+N\+C\+\_\+\+M\+U\+T\+E\+\_\+\+M\+A\+SK}}~(1u $<$$<$ 8)					/$\ast$$\ast$ Resync mute mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_ac8221c13cc4fc9f20965af98f724b1d6}{A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+W\+O\+R\+D\+\_\+\+O\+F\+F\+S\+E\+T\+\_\+\+M\+A\+SK}}~(0b11111111u)				/$\ast$$\ast$ Word offset mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_ab03d590e061b06249f26b7f8743415cd}{A\+I\+C3\+X\+\_\+\+C\+O\+D\+E\+C\+\_\+\+D\+F\+I\+L\+T\+\_\+\+H\+P\+F\+\_\+\+L\+E\+F\+T\+\_\+\+M\+A\+SK}}~(0b11u $<$$<$ 6)				/$\ast$$\ast$ Left high pass filter mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_ad0794ba0bc2b87a2189cfc37549a1535}{A\+I\+C3\+X\+\_\+\+C\+O\+D\+E\+C\+\_\+\+D\+F\+I\+L\+T\+\_\+\+H\+P\+F\+\_\+\+R\+I\+G\+H\+T\+\_\+\+M\+A\+SK}}~(0b11u $<$$<$ 4)				/$\ast$$\ast$ Right high pass filter mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_adca94d731468fd95eda4fd0156794515}{A\+I\+C3\+X\+\_\+\+C\+O\+D\+E\+C\+\_\+\+D\+F\+I\+L\+T\+\_\+\+D\+F\+I\+L\+T\+\_\+\+L\+E\+F\+T\+\_\+\+M\+A\+SK}}~(1u $<$$<$ 3)					/$\ast$$\ast$ Left digital effects filter mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_a40d8f51030341b8d859a4a0c8f23f4a6}{A\+I\+C3\+X\+\_\+\+C\+O\+D\+E\+C\+\_\+\+D\+F\+I\+L\+T\+\_\+\+D\+E\+E\+M\+P\+H\+\_\+\+L\+E\+F\+T\+\_\+\+M\+A\+SK}}~(1u $<$$<$ 2)					/$\ast$$\ast$ Left de-\/emphasis filter mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_ac0ad402c1331662f4125dd3b437ccbe6}{A\+I\+C3\+X\+\_\+\+C\+O\+D\+E\+C\+\_\+\+D\+F\+I\+L\+T\+\_\+\+D\+F\+I\+L\+T\+\_\+\+R\+I\+G\+H\+T\+\_\+\+M\+A\+SK}}~(1u $<$$<$ 1)					/$\ast$$\ast$ Right digital effects filter mask $\ast$/
+\item 
+\#define \mbox{\hyperlink{user__aic3x_8c_a609842f4f07889166dd206fe80be0819}{A\+I\+C3\+X\+\_\+\+C\+O\+D\+E\+C\+\_\+\+D\+F\+I\+L\+T\+\_\+\+D\+E\+E\+M\+P\+H\+\_\+\+R\+I\+G\+H\+T\+\_\+\+M\+A\+SK}}~(1u)						/$\ast$$\ast$ Right de-\/emphasis filter mask $\ast$/
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+H\+A\+L\+\_\+\+Status\+Type\+Def \mbox{\hyperlink{user__aic3x_8c_a53f02f907a311c58d7b04720824fbc9f}{U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Init}} (\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$haic3x)
+\begin{DoxyCompactList}\small\item\em Initialize the A\+I\+C3X. \end{DoxyCompactList}\item 
+H\+A\+L\+\_\+\+Status\+Type\+Def \mbox{\hyperlink{user__aic3x_8c_a37b9e3e583d7bd2da372cf6a59a16090}{U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Hw\+Reset}} (\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$haic3x)
+\begin{DoxyCompactList}\small\item\em Performs hardware reset. \end{DoxyCompactList}\item 
+H\+A\+L\+\_\+\+Status\+Type\+Def \mbox{\hyperlink{user__aic3x_8c_ab9e1afba04d5353dd2215602703bd79b}{U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Sw\+Reset}} (\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$haic3x)
+\begin{DoxyCompactList}\small\item\em Performs software reset. \end{DoxyCompactList}\item 
+H\+A\+L\+\_\+\+Status\+Type\+Def \mbox{\hyperlink{user__aic3x_8c_aae08a7a26cd8f80548aeb67d7e904af2}{U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Read\+Sample\+Rate\+Sel}} (\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$haic3x, \mbox{\hyperlink{user__aic3x_8h_aad52ee1e7ace6498236b8e046a537d18}{A\+I\+C3\+X\+\_\+\+Sample\+Rate\+Reg\+Map\+\_\+\+Typedef}} $\ast$p\+Sample\+Rate\+Reg\+Map)
+\begin{DoxyCompactList}\small\item\em Reads the sample rate register. \end{DoxyCompactList}\item 
+H\+A\+L\+\_\+\+Status\+Type\+Def \mbox{\hyperlink{user__aic3x_8c_a93e2210a031f9daca5df7c5edf576b78}{U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Write\+Sample\+Rate\+Sel}} (\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$haic3x, \mbox{\hyperlink{user__aic3x_8h_a7dcb008f75acb497b8a2675dadc8c380}{A\+I\+C3\+X\+\_\+\+Sample\+Rate\+\_\+\+Type\+Def}} sample\+Rate, \mbox{\hyperlink{user__aic3x_8h_aad52ee1e7ace6498236b8e046a537d18}{A\+I\+C3\+X\+\_\+\+Sample\+Rate\+Reg\+Map\+\_\+\+Typedef}} $\ast$p\+Sample\+Rate\+Reg\+Map)
+\begin{DoxyCompactList}\small\item\em Writes the sample rate config to the registers. \end{DoxyCompactList}\item 
+H\+A\+L\+\_\+\+Status\+Type\+Def \mbox{\hyperlink{user__aic3x_8c_a02e4fbf6858d2bd68b7a94fd006b23c9}{U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Read\+Pll\+Programming}} (\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$haic3x, \mbox{\hyperlink{user__aic3x_8h_aea3698d9ee5ec60dfa843fa224d0bc59}{A\+I\+C3\+X\+\_\+\+P\+L\+L\+Programming\+\_\+\+Type\+Def}} $\ast$p\+Pll\+Programming)
+\begin{DoxyCompactList}\small\item\em Reads the P\+LL programming and stores it in a given struct. \end{DoxyCompactList}\item 
+H\+A\+L\+\_\+\+Status\+Type\+Def \mbox{\hyperlink{user__aic3x_8c_ac6ec7f1cfc8c80599da95d464be5b414}{U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Write\+Pll\+Programming}} (\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$haic3x, \mbox{\hyperlink{user__aic3x_8h_aea3698d9ee5ec60dfa843fa224d0bc59}{A\+I\+C3\+X\+\_\+\+P\+L\+L\+Programming\+\_\+\+Type\+Def}} $\ast$p\+Pll\+Programming)
+\begin{DoxyCompactList}\small\item\em Writes the pll programming config to the registers. \end{DoxyCompactList}\item 
+H\+A\+L\+\_\+\+Status\+Type\+Def \mbox{\hyperlink{user__aic3x_8c_a86f4801b1b3924ce5439b9552c625923}{U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Read\+Data\+Path\+Control}} (\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$haic3x, \mbox{\hyperlink{user__aic3x_8h_a4e9b83c02059cf684e5872ed654cb323}{A\+I\+C3\+X\+\_\+\+Data\+Path\+Control\+\_\+\+Type\+Def}} $\ast$p\+Data\+Path\+Control)
+\begin{DoxyCompactList}\small\item\em Reads the data path control and stores it in a given struct. \end{DoxyCompactList}\item 
+H\+A\+L\+\_\+\+Status\+Type\+Def \mbox{\hyperlink{user__aic3x_8c_a3462dd519b50f5b98bf0bd567604d77c}{U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Write\+Data\+Path\+Control}} (\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$haic3x, \mbox{\hyperlink{user__aic3x_8h_a4e9b83c02059cf684e5872ed654cb323}{A\+I\+C3\+X\+\_\+\+Data\+Path\+Control\+\_\+\+Type\+Def}} $\ast$p\+Data\+Path\+Control)
+\begin{DoxyCompactList}\small\item\em Writes the data path control config to the A\+I\+C3X. \end{DoxyCompactList}\item 
+H\+A\+L\+\_\+\+Status\+Type\+Def \mbox{\hyperlink{user__aic3x_8c_abb345ee4a788ff0d31845c26e6abe037}{U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Read\+A\+S\+Data\+Intf\+Control}} (\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$haic3x, \mbox{\hyperlink{user__aic3x_8h_a5a57a54efe93d68e85d873f4c6d6fc76}{A\+I\+C3\+X\+\_\+\+A\+S\+D\+Int\+Ctrl\+\_\+\+Type\+Def}} $\ast$p\+A\+S\+D\+Intf\+Ctrl)
+\begin{DoxyCompactList}\small\item\em Reads the A\+SD interface control and stores it in a given struct. \end{DoxyCompactList}\item 
+H\+A\+L\+\_\+\+Status\+Type\+Def \mbox{\hyperlink{user__aic3x_8c_a7aca6ff9c175d14a73c67b28611e92b5}{U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Write\+A\+S\+Data\+Intf\+Control}} (\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$haic3x, \mbox{\hyperlink{user__aic3x_8h_a5a57a54efe93d68e85d873f4c6d6fc76}{A\+I\+C3\+X\+\_\+\+A\+S\+D\+Int\+Ctrl\+\_\+\+Type\+Def}} $\ast$p\+A\+S\+D\+Intf\+Ctrl)
+\begin{DoxyCompactList}\small\item\em Writes the A\+SD interface control config to the A\+I\+C3X. \end{DoxyCompactList}\item 
+H\+A\+L\+\_\+\+Status\+Type\+Def \mbox{\hyperlink{user__aic3x_8c_a0c32184f3dba85a799877466ab0bff64}{U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Read\+Codec\+Overflow\+Status}} (\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$haic3x, \mbox{\hyperlink{user__aic3x_8h_a1cdc6fa6f429041422ba7f4c5c5bd617}{A\+I\+C3\+X\+\_\+\+Codec\+Overflow\+\_\+\+Type\+Def}} $\ast$p\+Codec\+Overflow)
+\begin{DoxyCompactList}\small\item\em Reads the codec overflow status. \end{DoxyCompactList}\item 
+H\+A\+L\+\_\+\+Status\+Type\+Def \mbox{\hyperlink{user__aic3x_8c_a3fdd9ee86753ce4049e051008af410f2}{U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Read\+Codec\+Digital\+Filter}} (\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$haic3x, \mbox{\hyperlink{user__aic3x_8h_a8b6fef61c01c799bc0fac331b0df54ba}{A\+I\+C3\+X\+\_\+\+Codec\+Digital\+Filter\+\_\+\+Type\+Def}} $\ast$p\+Codec\+D\+Filt)
+\begin{DoxyCompactList}\small\item\em Reads the codec digital filter. \end{DoxyCompactList}\item 
+H\+A\+L\+\_\+\+Status\+Type\+Def \mbox{\hyperlink{user__aic3x_8c_a4c306ae52396c368bb06b79238e19fa7}{U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Write\+Codec\+Digital\+Filter}} (\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$haic3x, \mbox{\hyperlink{user__aic3x_8h_a8b6fef61c01c799bc0fac331b0df54ba}{A\+I\+C3\+X\+\_\+\+Codec\+Digital\+Filter\+\_\+\+Type\+Def}} $\ast$p\+Codec\+D\+Filt)
+\begin{DoxyCompactList}\small\item\em Sets the codec digital filter. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Driver for the A\+I\+C3X audio codec. 
+
+\begin{DoxyAuthor}{Author}
+Dominik Grob 
+\end{DoxyAuthor}
+
+
+\doxysubsection{Macro Definition Documentation}
+\mbox{\Hypertarget{user__aic3x_8c_a5028ae72fef23a8448bf3295e36acb94}\label{user__aic3x_8c_a5028ae72fef23a8448bf3295e36acb94}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_ASD\_ADC\_RESYNC\_MASK@{AIC3X\_ASD\_ADC\_RESYNC\_MASK}}
+\index{AIC3X\_ASD\_ADC\_RESYNC\_MASK@{AIC3X\_ASD\_ADC\_RESYNC\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_ASD\_ADC\_RESYNC\_MASK}{AIC3X\_ASD\_ADC\_RESYNC\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+A\+D\+C\+\_\+\+R\+E\+S\+Y\+N\+C\+\_\+\+M\+A\+SK~(1u $<$$<$ 9)					/$\ast$$\ast$ A\+DC resync mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_a7d3e2d7778f306420f0709bf14b7bb57}\label{user__aic3x_8c_a7d3e2d7778f306420f0709bf14b7bb57}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_ASD\_BCLK\_265\_CLOCK\_MODE\_MASK@{AIC3X\_ASD\_BCLK\_265\_CLOCK\_MODE\_MASK}}
+\index{AIC3X\_ASD\_BCLK\_265\_CLOCK\_MODE\_MASK@{AIC3X\_ASD\_BCLK\_265\_CLOCK\_MODE\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_ASD\_BCLK\_265\_CLOCK\_MODE\_MASK}{AIC3X\_ASD\_BCLK\_265\_CLOCK\_MODE\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+B\+C\+L\+K\+\_\+265\+\_\+\+C\+L\+O\+C\+K\+\_\+\+M\+O\+D\+E\+\_\+\+M\+A\+SK~(1u $<$$<$ 11)					/$\ast$$\ast$ B\+C\+LK 265 clock mode mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_a3792bdda2359bc3347a81243e678acb6}\label{user__aic3x_8c_a3792bdda2359bc3347a81243e678acb6}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_ASD\_BCLK\_DIRECTION\_MASK@{AIC3X\_ASD\_BCLK\_DIRECTION\_MASK}}
+\index{AIC3X\_ASD\_BCLK\_DIRECTION\_MASK@{AIC3X\_ASD\_BCLK\_DIRECTION\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_ASD\_BCLK\_DIRECTION\_MASK}{AIC3X\_ASD\_BCLK\_DIRECTION\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+B\+C\+L\+K\+\_\+\+D\+I\+R\+E\+C\+T\+I\+O\+N\+\_\+\+M\+A\+SK~(1u $<$$<$ 23)					/$\ast$$\ast$ B\+C\+LK direction mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_a528dc0f31d687cbe8684eb62f38b0294}\label{user__aic3x_8c_a528dc0f31d687cbe8684eb62f38b0294}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_ASD\_CLK\_DRIVE\_CTRL\_MASK@{AIC3X\_ASD\_CLK\_DRIVE\_CTRL\_MASK}}
+\index{AIC3X\_ASD\_CLK\_DRIVE\_CTRL\_MASK@{AIC3X\_ASD\_CLK\_DRIVE\_CTRL\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_ASD\_CLK\_DRIVE\_CTRL\_MASK}{AIC3X\_ASD\_CLK\_DRIVE\_CTRL\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+C\+L\+K\+\_\+\+D\+R\+I\+V\+E\+\_\+\+C\+T\+R\+L\+\_\+\+M\+A\+SK~(1u $<$$<$ 20) 					/$\ast$$\ast$ C\+LK Drive control mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_aab04cd8f82a5f6f8dfcec97a063a9c3d}\label{user__aic3x_8c_aab04cd8f82a5f6f8dfcec97a063a9c3d}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_ASD\_DAC\_RESYNC\_MASK@{AIC3X\_ASD\_DAC\_RESYNC\_MASK}}
+\index{AIC3X\_ASD\_DAC\_RESYNC\_MASK@{AIC3X\_ASD\_DAC\_RESYNC\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_ASD\_DAC\_RESYNC\_MASK}{AIC3X\_ASD\_DAC\_RESYNC\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+D\+A\+C\+\_\+\+R\+E\+S\+Y\+N\+C\+\_\+\+M\+A\+SK~(1u $<$$<$ 10)					/$\ast$$\ast$ D\+AC resync mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_a85034c02cd47a97a8eb21322d0e6c954}\label{user__aic3x_8c_a85034c02cd47a97a8eb21322d0e6c954}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_ASD\_DOUT\_TRISTATE\_MASK@{AIC3X\_ASD\_DOUT\_TRISTATE\_MASK}}
+\index{AIC3X\_ASD\_DOUT\_TRISTATE\_MASK@{AIC3X\_ASD\_DOUT\_TRISTATE\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_ASD\_DOUT\_TRISTATE\_MASK}{AIC3X\_ASD\_DOUT\_TRISTATE\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+D\+O\+U\+T\+\_\+\+T\+R\+I\+S\+T\+A\+T\+E\+\_\+\+M\+A\+SK~(1u $<$$<$ 21)					/$\ast$$\ast$ D\+O\+UT tristate mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_af356d5c502f840522ac3369927b148c2}\label{user__aic3x_8c_af356d5c502f840522ac3369927b148c2}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_ASD\_EFFECT\_3D\_MASK@{AIC3X\_ASD\_EFFECT\_3D\_MASK}}
+\index{AIC3X\_ASD\_EFFECT\_3D\_MASK@{AIC3X\_ASD\_EFFECT\_3D\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_ASD\_EFFECT\_3D\_MASK}{AIC3X\_ASD\_EFFECT\_3D\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+E\+F\+F\+E\+C\+T\+\_\+3\+D\+\_\+\+M\+A\+SK~(1u $<$$<$ 18)					/$\ast$$\ast$ 3D effect mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_ab5c3dcb0f8344e9f3288e43dbec1b41a}\label{user__aic3x_8c_ab5c3dcb0f8344e9f3288e43dbec1b41a}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_ASD\_RESYNC\_MUTE\_MASK@{AIC3X\_ASD\_RESYNC\_MUTE\_MASK}}
+\index{AIC3X\_ASD\_RESYNC\_MUTE\_MASK@{AIC3X\_ASD\_RESYNC\_MUTE\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_ASD\_RESYNC\_MUTE\_MASK}{AIC3X\_ASD\_RESYNC\_MUTE\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+R\+E\+S\+Y\+N\+C\+\_\+\+M\+U\+T\+E\+\_\+\+M\+A\+SK~(1u $<$$<$ 8)					/$\ast$$\ast$ Resync mute mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_a4bea4e89f13581a1d7c1ff173baf4cd6}\label{user__aic3x_8c_a4bea4e89f13581a1d7c1ff173baf4cd6}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_ASD\_TRANSFER\_MODE\_MASK@{AIC3X\_ASD\_TRANSFER\_MODE\_MASK}}
+\index{AIC3X\_ASD\_TRANSFER\_MODE\_MASK@{AIC3X\_ASD\_TRANSFER\_MODE\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_ASD\_TRANSFER\_MODE\_MASK}{AIC3X\_ASD\_TRANSFER\_MODE\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+T\+R\+A\+N\+S\+F\+E\+R\+\_\+\+M\+O\+D\+E\+\_\+\+M\+A\+SK~(0b11u $<$$<$ 14)				/$\ast$$\ast$ Transfer mode mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_ad43c2e7b40f6d6463600acab14528780}\label{user__aic3x_8c_ad43c2e7b40f6d6463600acab14528780}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_ASD\_WCLK\_DIRECTION\_MASK@{AIC3X\_ASD\_WCLK\_DIRECTION\_MASK}}
+\index{AIC3X\_ASD\_WCLK\_DIRECTION\_MASK@{AIC3X\_ASD\_WCLK\_DIRECTION\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_ASD\_WCLK\_DIRECTION\_MASK}{AIC3X\_ASD\_WCLK\_DIRECTION\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+W\+C\+L\+K\+\_\+\+D\+I\+R\+E\+C\+T\+I\+O\+N\+\_\+\+M\+A\+SK~(1u $<$$<$ 22)					/$\ast$$\ast$ W\+C\+LK direction mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_af92bfe042536063213790e3cf79df948}\label{user__aic3x_8c_af92bfe042536063213790e3cf79df948}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_ASD\_WORD\_LENGTH\_MASK@{AIC3X\_ASD\_WORD\_LENGTH\_MASK}}
+\index{AIC3X\_ASD\_WORD\_LENGTH\_MASK@{AIC3X\_ASD\_WORD\_LENGTH\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_ASD\_WORD\_LENGTH\_MASK}{AIC3X\_ASD\_WORD\_LENGTH\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+W\+O\+R\+D\+\_\+\+L\+E\+N\+G\+T\+H\+\_\+\+M\+A\+SK~(0b11u $<$$<$ 12)				/$\ast$$\ast$ Word length mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_ac8221c13cc4fc9f20965af98f724b1d6}\label{user__aic3x_8c_ac8221c13cc4fc9f20965af98f724b1d6}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_ASD\_WORD\_OFFSET\_MASK@{AIC3X\_ASD\_WORD\_OFFSET\_MASK}}
+\index{AIC3X\_ASD\_WORD\_OFFSET\_MASK@{AIC3X\_ASD\_WORD\_OFFSET\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_ASD\_WORD\_OFFSET\_MASK}{AIC3X\_ASD\_WORD\_OFFSET\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+A\+S\+D\+\_\+\+W\+O\+R\+D\+\_\+\+O\+F\+F\+S\+E\+T\+\_\+\+M\+A\+SK~(0b11111111u)				/$\ast$$\ast$ Word offset mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_abe057f9c7da1745e5af53c097e2e30c8}\label{user__aic3x_8c_abe057f9c7da1745e5af53c097e2e30c8}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_BASE\_RATE\_MASK@{AIC3X\_BASE\_RATE\_MASK}}
+\index{AIC3X\_BASE\_RATE\_MASK@{AIC3X\_BASE\_RATE\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_BASE\_RATE\_MASK}{AIC3X\_BASE\_RATE\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+B\+A\+S\+E\+\_\+\+R\+A\+T\+E\+\_\+\+M\+A\+SK~(1u $<$$<$ 7) 					/$\ast$$\ast$ Base rate mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_a40d8f51030341b8d859a4a0c8f23f4a6}\label{user__aic3x_8c_a40d8f51030341b8d859a4a0c8f23f4a6}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_CODEC\_DFILT\_DEEMPH\_LEFT\_MASK@{AIC3X\_CODEC\_DFILT\_DEEMPH\_LEFT\_MASK}}
+\index{AIC3X\_CODEC\_DFILT\_DEEMPH\_LEFT\_MASK@{AIC3X\_CODEC\_DFILT\_DEEMPH\_LEFT\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_CODEC\_DFILT\_DEEMPH\_LEFT\_MASK}{AIC3X\_CODEC\_DFILT\_DEEMPH\_LEFT\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+C\+O\+D\+E\+C\+\_\+\+D\+F\+I\+L\+T\+\_\+\+D\+E\+E\+M\+P\+H\+\_\+\+L\+E\+F\+T\+\_\+\+M\+A\+SK~(1u $<$$<$ 2)					/$\ast$$\ast$ Left de-\/emphasis filter mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_a609842f4f07889166dd206fe80be0819}\label{user__aic3x_8c_a609842f4f07889166dd206fe80be0819}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_CODEC\_DFILT\_DEEMPH\_RIGHT\_MASK@{AIC3X\_CODEC\_DFILT\_DEEMPH\_RIGHT\_MASK}}
+\index{AIC3X\_CODEC\_DFILT\_DEEMPH\_RIGHT\_MASK@{AIC3X\_CODEC\_DFILT\_DEEMPH\_RIGHT\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_CODEC\_DFILT\_DEEMPH\_RIGHT\_MASK}{AIC3X\_CODEC\_DFILT\_DEEMPH\_RIGHT\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+C\+O\+D\+E\+C\+\_\+\+D\+F\+I\+L\+T\+\_\+\+D\+E\+E\+M\+P\+H\+\_\+\+R\+I\+G\+H\+T\+\_\+\+M\+A\+SK~(1u)						/$\ast$$\ast$ Right de-\/emphasis filter mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_adca94d731468fd95eda4fd0156794515}\label{user__aic3x_8c_adca94d731468fd95eda4fd0156794515}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_CODEC\_DFILT\_DFILT\_LEFT\_MASK@{AIC3X\_CODEC\_DFILT\_DFILT\_LEFT\_MASK}}
+\index{AIC3X\_CODEC\_DFILT\_DFILT\_LEFT\_MASK@{AIC3X\_CODEC\_DFILT\_DFILT\_LEFT\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_CODEC\_DFILT\_DFILT\_LEFT\_MASK}{AIC3X\_CODEC\_DFILT\_DFILT\_LEFT\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+C\+O\+D\+E\+C\+\_\+\+D\+F\+I\+L\+T\+\_\+\+D\+F\+I\+L\+T\+\_\+\+L\+E\+F\+T\+\_\+\+M\+A\+SK~(1u $<$$<$ 3)					/$\ast$$\ast$ Left digital effects filter mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_ac0ad402c1331662f4125dd3b437ccbe6}\label{user__aic3x_8c_ac0ad402c1331662f4125dd3b437ccbe6}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_CODEC\_DFILT\_DFILT\_RIGHT\_MASK@{AIC3X\_CODEC\_DFILT\_DFILT\_RIGHT\_MASK}}
+\index{AIC3X\_CODEC\_DFILT\_DFILT\_RIGHT\_MASK@{AIC3X\_CODEC\_DFILT\_DFILT\_RIGHT\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_CODEC\_DFILT\_DFILT\_RIGHT\_MASK}{AIC3X\_CODEC\_DFILT\_DFILT\_RIGHT\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+C\+O\+D\+E\+C\+\_\+\+D\+F\+I\+L\+T\+\_\+\+D\+F\+I\+L\+T\+\_\+\+R\+I\+G\+H\+T\+\_\+\+M\+A\+SK~(1u $<$$<$ 1)					/$\ast$$\ast$ Right digital effects filter mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_ab03d590e061b06249f26b7f8743415cd}\label{user__aic3x_8c_ab03d590e061b06249f26b7f8743415cd}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_CODEC\_DFILT\_HPF\_LEFT\_MASK@{AIC3X\_CODEC\_DFILT\_HPF\_LEFT\_MASK}}
+\index{AIC3X\_CODEC\_DFILT\_HPF\_LEFT\_MASK@{AIC3X\_CODEC\_DFILT\_HPF\_LEFT\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_CODEC\_DFILT\_HPF\_LEFT\_MASK}{AIC3X\_CODEC\_DFILT\_HPF\_LEFT\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+C\+O\+D\+E\+C\+\_\+\+D\+F\+I\+L\+T\+\_\+\+H\+P\+F\+\_\+\+L\+E\+F\+T\+\_\+\+M\+A\+SK~(0b11u $<$$<$ 6)				/$\ast$$\ast$ Left high pass filter mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_ad0794ba0bc2b87a2189cfc37549a1535}\label{user__aic3x_8c_ad0794ba0bc2b87a2189cfc37549a1535}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_CODEC\_DFILT\_HPF\_RIGHT\_MASK@{AIC3X\_CODEC\_DFILT\_HPF\_RIGHT\_MASK}}
+\index{AIC3X\_CODEC\_DFILT\_HPF\_RIGHT\_MASK@{AIC3X\_CODEC\_DFILT\_HPF\_RIGHT\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_CODEC\_DFILT\_HPF\_RIGHT\_MASK}{AIC3X\_CODEC\_DFILT\_HPF\_RIGHT\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+C\+O\+D\+E\+C\+\_\+\+D\+F\+I\+L\+T\+\_\+\+H\+P\+F\+\_\+\+R\+I\+G\+H\+T\+\_\+\+M\+A\+SK~(0b11u $<$$<$ 4)				/$\ast$$\ast$ Right high pass filter mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_a98520ba43d93d2066a0d57079db04714}\label{user__aic3x_8c_a98520ba43d93d2066a0d57079db04714}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_DATAPATH\_LEFT\_MASK@{AIC3X\_DATAPATH\_LEFT\_MASK}}
+\index{AIC3X\_DATAPATH\_LEFT\_MASK@{AIC3X\_DATAPATH\_LEFT\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_DATAPATH\_LEFT\_MASK}{AIC3X\_DATAPATH\_LEFT\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+D\+A\+T\+A\+P\+A\+T\+H\+\_\+\+L\+E\+F\+T\+\_\+\+M\+A\+SK~(0b11u $<$$<$ 3) 	    		/$\ast$$\ast$ Left D\+AC data path mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_a79c872dc0ff3fb0856363afbaad9d042}\label{user__aic3x_8c_a79c872dc0ff3fb0856363afbaad9d042}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_DATAPATH\_RIGHT\_MASK@{AIC3X\_DATAPATH\_RIGHT\_MASK}}
+\index{AIC3X\_DATAPATH\_RIGHT\_MASK@{AIC3X\_DATAPATH\_RIGHT\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_DATAPATH\_RIGHT\_MASK}{AIC3X\_DATAPATH\_RIGHT\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+D\+A\+T\+A\+P\+A\+T\+H\+\_\+\+R\+I\+G\+H\+T\+\_\+\+M\+A\+SK~(0b11u $<$$<$ 1) 	    		/$\ast$$\ast$ Right D\+AC data path mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_ae9eaa2fd02762aee166be8f0eda4aa47}\label{user__aic3x_8c_ae9eaa2fd02762aee166be8f0eda4aa47}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_PLL\_D\_MASK@{AIC3X\_PLL\_D\_MASK}}
+\index{AIC3X\_PLL\_D\_MASK@{AIC3X\_PLL\_D\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_PLL\_D\_MASK}{AIC3X\_PLL\_D\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+P\+L\+L\+\_\+\+D\+\_\+\+M\+A\+SK~(0b11111111111111u $<$$<$ 2) 	/$\ast$$\ast$ P\+LL D register bit mask (for both of the registers combined) $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_ae0e790d0e108a3af85e7483ec6cb72dd}\label{user__aic3x_8c_ae0e790d0e108a3af85e7483ec6cb72dd}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_PLL\_J\_MASK@{AIC3X\_PLL\_J\_MASK}}
+\index{AIC3X\_PLL\_J\_MASK@{AIC3X\_PLL\_J\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_PLL\_J\_MASK}{AIC3X\_PLL\_J\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+P\+L\+L\+\_\+\+J\+\_\+\+M\+A\+SK~(0b111111u $<$$<$ 2)			/$\ast$$\ast$ P\+LL J register bit mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_ae573fafbb3dd33e6fae35407f9dd5833}\label{user__aic3x_8c_ae573fafbb3dd33e6fae35407f9dd5833}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_PLL\_P\_MASK@{AIC3X\_PLL\_P\_MASK}}
+\index{AIC3X\_PLL\_P\_MASK@{AIC3X\_PLL\_P\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_PLL\_P\_MASK}{AIC3X\_PLL\_P\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+P\+L\+L\+\_\+\+P\+\_\+\+M\+A\+SK~(0b111u) 			        /$\ast$$\ast$ P\+LL P register bit mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_a9e15cfd9aa09bb8fd30c92fc23df1b7e}\label{user__aic3x_8c_a9e15cfd9aa09bb8fd30c92fc23df1b7e}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_PLL\_Q\_MASK@{AIC3X\_PLL\_Q\_MASK}}
+\index{AIC3X\_PLL\_Q\_MASK@{AIC3X\_PLL\_Q\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_PLL\_Q\_MASK}{AIC3X\_PLL\_Q\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+P\+L\+L\+\_\+\+Q\+\_\+\+M\+A\+SK~(0b1111u $<$$<$ 3) 				/$\ast$$\ast$ P\+LL Q register bit mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_a54ea197733d56bc80290abb887b36cfb}\label{user__aic3x_8c_a54ea197733d56bc80290abb887b36cfb}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_PLL\_R\_MASK@{AIC3X\_PLL\_R\_MASK}}
+\index{AIC3X\_PLL\_R\_MASK@{AIC3X\_PLL\_R\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_PLL\_R\_MASK}{AIC3X\_PLL\_R\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+P\+L\+L\+\_\+\+R\+\_\+\+M\+A\+SK~(0b1111u)			        /$\ast$$\ast$ P\+LL R register bit mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_a5559374b2cfa46cdfac780f3c4b37710}\label{user__aic3x_8c_a5559374b2cfa46cdfac780f3c4b37710}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_RATE\_DOUBLING\_MASK@{AIC3X\_RATE\_DOUBLING\_MASK}}
+\index{AIC3X\_RATE\_DOUBLING\_MASK@{AIC3X\_RATE\_DOUBLING\_MASK}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_RATE\_DOUBLING\_MASK}{AIC3X\_RATE\_DOUBLING\_MASK}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+R\+A\+T\+E\+\_\+\+D\+O\+U\+B\+L\+I\+N\+G\+\_\+\+M\+A\+SK~(0b11u $<$$<$ 5) 				/$\ast$$\ast$ Rate doubling mask $\ast$/}
+
+\mbox{\Hypertarget{user__aic3x_8c_a684e85f1369563a654c546cbf28553b0}\label{user__aic3x_8c_a684e85f1369563a654c546cbf28553b0}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_RESET\_TIME\_HIGH@{AIC3X\_RESET\_TIME\_HIGH}}
+\index{AIC3X\_RESET\_TIME\_HIGH@{AIC3X\_RESET\_TIME\_HIGH}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_RESET\_TIME\_HIGH}{AIC3X\_RESET\_TIME\_HIGH}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+R\+E\+S\+E\+T\+\_\+\+T\+I\+M\+E\+\_\+\+H\+I\+GH~0u}
+
+\mbox{\Hypertarget{user__aic3x_8c_aa411032f848faa7d4cfde8cb780f6e12}\label{user__aic3x_8c_aa411032f848faa7d4cfde8cb780f6e12}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!AIC3X\_RESET\_TIME\_LOW@{AIC3X\_RESET\_TIME\_LOW}}
+\index{AIC3X\_RESET\_TIME\_LOW@{AIC3X\_RESET\_TIME\_LOW}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{AIC3X\_RESET\_TIME\_LOW}{AIC3X\_RESET\_TIME\_LOW}}
+{\footnotesize\ttfamily \#define A\+I\+C3\+X\+\_\+\+R\+E\+S\+E\+T\+\_\+\+T\+I\+M\+E\+\_\+\+L\+OW~1u}
+
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{user__aic3x_8c_a37b9e3e583d7bd2da372cf6a59a16090}\label{user__aic3x_8c_a37b9e3e583d7bd2da372cf6a59a16090}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!USER\_AIC3X\_HwReset@{USER\_AIC3X\_HwReset}}
+\index{USER\_AIC3X\_HwReset@{USER\_AIC3X\_HwReset}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{USER\_AIC3X\_HwReset()}{USER\_AIC3X\_HwReset()}}
+{\footnotesize\ttfamily H\+A\+L\+\_\+\+Status\+Type\+Def U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Hw\+Reset (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$}]{haic3x }\end{DoxyParamCaption})}
+
+
+
+Performs hardware reset. 
+
+Performs a hardware reset of the A\+I\+C3X by toggling the reset pin.
+
+
+\begin{DoxyParams}{Parameters}
+{\em haic3x} & Pointer to a A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def structure that contains the configuration information for the specified A\+I\+C3X. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em Hal} & Status \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{user__aic3x_8c_a53f02f907a311c58d7b04720824fbc9f}\label{user__aic3x_8c_a53f02f907a311c58d7b04720824fbc9f}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!USER\_AIC3X\_Init@{USER\_AIC3X\_Init}}
+\index{USER\_AIC3X\_Init@{USER\_AIC3X\_Init}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{USER\_AIC3X\_Init()}{USER\_AIC3X\_Init()}}
+{\footnotesize\ttfamily H\+A\+L\+\_\+\+Status\+Type\+Def U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Init (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$}]{haic3x }\end{DoxyParamCaption})}
+
+
+
+Initialize the A\+I\+C3X. 
+
+This function performs a hardware reset and a software reset of the A\+I\+C3X.
+
+
+\begin{DoxyParams}{Parameters}
+{\em haic3x} & Pointer to a A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def structure that contains the configuration information for the specified A\+I\+C3X \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em Hal} & Status \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{user__aic3x_8c_abb345ee4a788ff0d31845c26e6abe037}\label{user__aic3x_8c_abb345ee4a788ff0d31845c26e6abe037}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!USER\_AIC3X\_ReadASDataIntfControl@{USER\_AIC3X\_ReadASDataIntfControl}}
+\index{USER\_AIC3X\_ReadASDataIntfControl@{USER\_AIC3X\_ReadASDataIntfControl}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{USER\_AIC3X\_ReadASDataIntfControl()}{USER\_AIC3X\_ReadASDataIntfControl()}}
+{\footnotesize\ttfamily H\+A\+L\+\_\+\+Status\+Type\+Def U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Read\+A\+S\+Data\+Intf\+Control (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$}]{haic3x,  }\item[{\mbox{\hyperlink{user__aic3x_8h_a5a57a54efe93d68e85d873f4c6d6fc76}{A\+I\+C3\+X\+\_\+\+A\+S\+D\+Int\+Ctrl\+\_\+\+Type\+Def}} $\ast$}]{p\+A\+S\+D\+Intf\+Ctrl }\end{DoxyParamCaption})}
+
+
+
+Reads the A\+SD interface control and stores it in a given struct. 
+
+Reads the A\+SD interface control from the A\+SD interface control register converts the bit values to the corresponding struct member values and stores them in a given struct.
+
+
+\begin{DoxyParams}{Parameters}
+{\em haic3x} & Pointer to a A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def structure that contains the configuration information for the specified A\+I\+C3X. \\
+\hline
+{\em p\+A\+S\+D\+Intf\+Ctrl} & Pointer to a A\+I\+C3\+X\+\_\+\+A\+S\+D\+Int\+Ctrl\+\_\+\+Type\+Def structure that will be populated with the A\+SD interface control data. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Hal Status
+\end{DoxyReturn}
+\begin{DoxyWarning}{Warning}
+The size of the sent data is not calculated with sizeof() but set with a constant value of 3u because the registers have a length of 24 bits. 
+\end{DoxyWarning}
+\mbox{\Hypertarget{user__aic3x_8c_a3fdd9ee86753ce4049e051008af410f2}\label{user__aic3x_8c_a3fdd9ee86753ce4049e051008af410f2}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!USER\_AIC3X\_ReadCodecDigitalFilter@{USER\_AIC3X\_ReadCodecDigitalFilter}}
+\index{USER\_AIC3X\_ReadCodecDigitalFilter@{USER\_AIC3X\_ReadCodecDigitalFilter}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{USER\_AIC3X\_ReadCodecDigitalFilter()}{USER\_AIC3X\_ReadCodecDigitalFilter()}}
+{\footnotesize\ttfamily H\+A\+L\+\_\+\+Status\+Type\+Def U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Read\+Codec\+Digital\+Filter (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$}]{haic3x,  }\item[{\mbox{\hyperlink{user__aic3x_8h_a8b6fef61c01c799bc0fac331b0df54ba}{A\+I\+C3\+X\+\_\+\+Codec\+Digital\+Filter\+\_\+\+Type\+Def}} $\ast$}]{p\+Codec\+D\+Filt }\end{DoxyParamCaption})}
+
+
+
+Reads the codec digital filter. 
+
+Reads the codec digital filter and stores it in a given struct.
+
+
+\begin{DoxyParams}{Parameters}
+{\em haic3x} & Pointer to a A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def structure that contains the configuration information for the specified A\+I\+C3X. \\
+\hline
+{\em p\+Codec\+D\+Filt} & Pointer to a A\+I\+C3\+X\+\_\+\+Codec\+Digital\+Filter\+\_\+\+Type\+Def structure that will be populated with the codec digital filter status. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Hal Status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{user__aic3x_8c_a0c32184f3dba85a799877466ab0bff64}\label{user__aic3x_8c_a0c32184f3dba85a799877466ab0bff64}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!USER\_AIC3X\_ReadCodecOverflowStatus@{USER\_AIC3X\_ReadCodecOverflowStatus}}
+\index{USER\_AIC3X\_ReadCodecOverflowStatus@{USER\_AIC3X\_ReadCodecOverflowStatus}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{USER\_AIC3X\_ReadCodecOverflowStatus()}{USER\_AIC3X\_ReadCodecOverflowStatus()}}
+{\footnotesize\ttfamily H\+A\+L\+\_\+\+Status\+Type\+Def U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Read\+Codec\+Overflow\+Status (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$}]{haic3x,  }\item[{\mbox{\hyperlink{user__aic3x_8h_a1cdc6fa6f429041422ba7f4c5c5bd617}{A\+I\+C3\+X\+\_\+\+Codec\+Overflow\+\_\+\+Type\+Def}} $\ast$}]{p\+Codec\+Overflow }\end{DoxyParamCaption})}
+
+
+
+Reads the codec overflow status. 
+
+Reads the codec overflow status and stores it in a given struct. After the values are read, the codec overflow register bits are reset to 0.
+
+
+\begin{DoxyParams}{Parameters}
+{\em haic3x} & Pointer to a A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def structure that contains the configuration information for the specified A\+I\+C3X. \\
+\hline
+{\em p\+Codec\+Overflow} & Pointer to a A\+I\+C3\+X\+\_\+\+Codec\+Overflow\+\_\+\+Type\+Def structure that will be populated with the codec overflow status. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Hal Status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{user__aic3x_8c_a86f4801b1b3924ce5439b9552c625923}\label{user__aic3x_8c_a86f4801b1b3924ce5439b9552c625923}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!USER\_AIC3X\_ReadDataPathControl@{USER\_AIC3X\_ReadDataPathControl}}
+\index{USER\_AIC3X\_ReadDataPathControl@{USER\_AIC3X\_ReadDataPathControl}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{USER\_AIC3X\_ReadDataPathControl()}{USER\_AIC3X\_ReadDataPathControl()}}
+{\footnotesize\ttfamily H\+A\+L\+\_\+\+Status\+Type\+Def U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Read\+Data\+Path\+Control (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$}]{haic3x,  }\item[{\mbox{\hyperlink{user__aic3x_8h_a4e9b83c02059cf684e5872ed654cb323}{A\+I\+C3\+X\+\_\+\+Data\+Path\+Control\+\_\+\+Type\+Def}} $\ast$}]{p\+Data\+Path\+Control }\end{DoxyParamCaption})}
+
+
+
+Reads the data path control and stores it in a given struct. 
+
+Reads the data path control from the codec data path register and stores it in a given struct.
+
+
+\begin{DoxyParams}{Parameters}
+{\em haic3x} & Pointer to a A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def structure that contains the configuration information for the specified A\+I\+C3X. \\
+\hline
+{\em p\+Data\+Path\+Control} & Pointer to a A\+I\+C3\+X\+\_\+\+Data\+Path\+Control\+\_\+\+Type\+Def structure that will be populated with the data path control. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Hal Status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{user__aic3x_8c_a02e4fbf6858d2bd68b7a94fd006b23c9}\label{user__aic3x_8c_a02e4fbf6858d2bd68b7a94fd006b23c9}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!USER\_AIC3X\_ReadPllProgramming@{USER\_AIC3X\_ReadPllProgramming}}
+\index{USER\_AIC3X\_ReadPllProgramming@{USER\_AIC3X\_ReadPllProgramming}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{USER\_AIC3X\_ReadPllProgramming()}{USER\_AIC3X\_ReadPllProgramming()}}
+{\footnotesize\ttfamily H\+A\+L\+\_\+\+Status\+Type\+Def U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Read\+Pll\+Programming (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$}]{haic3x,  }\item[{\mbox{\hyperlink{user__aic3x_8h_aea3698d9ee5ec60dfa843fa224d0bc59}{A\+I\+C3\+X\+\_\+\+P\+L\+L\+Programming\+\_\+\+Type\+Def}} $\ast$}]{p\+Pll\+Programming }\end{DoxyParamCaption})}
+
+
+
+Reads the P\+LL programming and stores it in a given struct. 
+
+Reads the P\+LL programming from the pll programming and the codec overflow register and stores it in a given struct.
+
+
+\begin{DoxyParams}{Parameters}
+{\em haic3x} & Pointer to a A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def structure that contains the configuration information for the specified A\+I\+C3X. \\
+\hline
+{\em p\+Pll\+Programming} & Pointer to a A\+I\+C3\+X\+\_\+\+P\+L\+L\+Programming\+\_\+\+Typedef structure that will be populated with the P\+LL programming \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Hal Status
+\end{DoxyReturn}
+\begin{DoxyWarning}{Warning}
+This function will reset the codec overflow register since it needs to read the P\+LL R value which is the same register. 
+\end{DoxyWarning}
+\mbox{\Hypertarget{user__aic3x_8c_aae08a7a26cd8f80548aeb67d7e904af2}\label{user__aic3x_8c_aae08a7a26cd8f80548aeb67d7e904af2}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!USER\_AIC3X\_ReadSampleRateSel@{USER\_AIC3X\_ReadSampleRateSel}}
+\index{USER\_AIC3X\_ReadSampleRateSel@{USER\_AIC3X\_ReadSampleRateSel}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{USER\_AIC3X\_ReadSampleRateSel()}{USER\_AIC3X\_ReadSampleRateSel()}}
+{\footnotesize\ttfamily H\+A\+L\+\_\+\+Status\+Type\+Def U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Read\+Sample\+Rate\+Sel (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$}]{haic3x,  }\item[{\mbox{\hyperlink{user__aic3x_8h_aad52ee1e7ace6498236b8e046a537d18}{A\+I\+C3\+X\+\_\+\+Sample\+Rate\+Reg\+Map\+\_\+\+Typedef}} $\ast$}]{p\+Sample\+Rate\+Reg\+Map }\end{DoxyParamCaption})}
+
+
+
+Reads the sample rate register. 
+
+Reads the sample rate of the A\+DC and D\+AC and stores the sample rate as well as the relevant register values in a given struct.
+
+
+\begin{DoxyParams}{Parameters}
+{\em haic3x} & Pointer to a A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def structure that contains the configuration information for the specified A\+I\+C3X. \\
+\hline
+{\em p\+Sample\+Rate\+Reg\+Map} & Pointer to a A\+I\+C3\+X\+\_\+\+Sample\+Rate\+Reg\+Map\+\_\+\+Typedef where the read data will be stored. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Hal Status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{user__aic3x_8c_ab9e1afba04d5353dd2215602703bd79b}\label{user__aic3x_8c_ab9e1afba04d5353dd2215602703bd79b}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!USER\_AIC3X\_SwReset@{USER\_AIC3X\_SwReset}}
+\index{USER\_AIC3X\_SwReset@{USER\_AIC3X\_SwReset}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{USER\_AIC3X\_SwReset()}{USER\_AIC3X\_SwReset()}}
+{\footnotesize\ttfamily H\+A\+L\+\_\+\+Status\+Type\+Def U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Sw\+Reset (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$}]{haic3x }\end{DoxyParamCaption})}
+
+
+
+Performs software reset. 
+
+Performs a software reset of the A\+I\+C3X by writing to the reset register.
+
+
+\begin{DoxyParams}{Parameters}
+{\em haic3x} & Pointer to a A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def structure that contains the configuration information for the specified A\+I\+C3X. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Hal Status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{user__aic3x_8c_a7aca6ff9c175d14a73c67b28611e92b5}\label{user__aic3x_8c_a7aca6ff9c175d14a73c67b28611e92b5}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!USER\_AIC3X\_WriteASDataIntfControl@{USER\_AIC3X\_WriteASDataIntfControl}}
+\index{USER\_AIC3X\_WriteASDataIntfControl@{USER\_AIC3X\_WriteASDataIntfControl}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{USER\_AIC3X\_WriteASDataIntfControl()}{USER\_AIC3X\_WriteASDataIntfControl()}}
+{\footnotesize\ttfamily H\+A\+L\+\_\+\+Status\+Type\+Def U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Write\+A\+S\+Data\+Intf\+Control (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$}]{haic3x,  }\item[{\mbox{\hyperlink{user__aic3x_8h_a5a57a54efe93d68e85d873f4c6d6fc76}{A\+I\+C3\+X\+\_\+\+A\+S\+D\+Int\+Ctrl\+\_\+\+Type\+Def}} $\ast$}]{p\+A\+S\+D\+Intf\+Ctrl }\end{DoxyParamCaption})}
+
+
+
+Writes the A\+SD interface control config to the A\+I\+C3X. 
+
+Sets the A\+SD interface control by first defining the needed register values and then writing them to the registers.
+
+
+\begin{DoxyParams}{Parameters}
+{\em haic3x} & Pointer to a A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def structure that contains the configuration information for the specified A\+I\+C3X. \\
+\hline
+{\em p\+A\+S\+D\+Intf\+Ctrl} & Pointer to a A\+I\+C3\+X\+\_\+\+A\+S\+D\+Int\+Ctrl\+\_\+\+Type\+Def structure which defines the A\+SD interface control. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Hal Status
+\end{DoxyReturn}
+\begin{DoxyWarning}{Warning}
+The size of the sent data is not calculated with sizeof() but set with a constant value of 3u because the registers have a length of 24 bits. 
+\end{DoxyWarning}
+\mbox{\Hypertarget{user__aic3x_8c_a4c306ae52396c368bb06b79238e19fa7}\label{user__aic3x_8c_a4c306ae52396c368bb06b79238e19fa7}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!USER\_AIC3X\_WriteCodecDigitalFilter@{USER\_AIC3X\_WriteCodecDigitalFilter}}
+\index{USER\_AIC3X\_WriteCodecDigitalFilter@{USER\_AIC3X\_WriteCodecDigitalFilter}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{USER\_AIC3X\_WriteCodecDigitalFilter()}{USER\_AIC3X\_WriteCodecDigitalFilter()}}
+{\footnotesize\ttfamily H\+A\+L\+\_\+\+Status\+Type\+Def U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Write\+Codec\+Digital\+Filter (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$}]{haic3x,  }\item[{\mbox{\hyperlink{user__aic3x_8h_a8b6fef61c01c799bc0fac331b0df54ba}{A\+I\+C3\+X\+\_\+\+Codec\+Digital\+Filter\+\_\+\+Type\+Def}} $\ast$}]{p\+Codec\+D\+Filt }\end{DoxyParamCaption})}
+
+
+
+Sets the codec digital filter. 
+
+Sets the codec digital filter by first defining the needed register values and writing them to the registers.
+
+
+\begin{DoxyParams}{Parameters}
+{\em haic3x} & Pointer to a A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def structure that contains the configuration information for the specified A\+I\+C3X. \\
+\hline
+{\em p\+Codec\+D\+Filt} & Pointer to a A\+I\+C3\+X\+\_\+\+Codec\+Digital\+Filter\+\_\+\+Type\+Def structure which defines the codec digital filter. The values will be checked. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Hal Status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{user__aic3x_8c_a3462dd519b50f5b98bf0bd567604d77c}\label{user__aic3x_8c_a3462dd519b50f5b98bf0bd567604d77c}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!USER\_AIC3X\_WriteDataPathControl@{USER\_AIC3X\_WriteDataPathControl}}
+\index{USER\_AIC3X\_WriteDataPathControl@{USER\_AIC3X\_WriteDataPathControl}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{USER\_AIC3X\_WriteDataPathControl()}{USER\_AIC3X\_WriteDataPathControl()}}
+{\footnotesize\ttfamily H\+A\+L\+\_\+\+Status\+Type\+Def U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Write\+Data\+Path\+Control (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$}]{haic3x,  }\item[{\mbox{\hyperlink{user__aic3x_8h_a4e9b83c02059cf684e5872ed654cb323}{A\+I\+C3\+X\+\_\+\+Data\+Path\+Control\+\_\+\+Type\+Def}} $\ast$}]{p\+Data\+Path\+Control }\end{DoxyParamCaption})}
+
+
+
+Writes the data path control config to the A\+I\+C3X. 
+
+Sets the data path control by reading the data path control register, defining the needed register values, then combining these with the existing values and writing them back to the registers.
+
+
+\begin{DoxyParams}{Parameters}
+{\em haic3x} & Pointer to a A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def structure that contains the configuration information for the specified A\+I\+C3X. \\
+\hline
+{\em p\+Data\+Path\+Control} & Pointer to a A\+I\+C3\+X\+\_\+\+Data\+Path\+Control\+\_\+\+Type\+Def structure which defines the data path control. The values will be checked. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Hal Status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{user__aic3x_8c_ac6ec7f1cfc8c80599da95d464be5b414}\label{user__aic3x_8c_ac6ec7f1cfc8c80599da95d464be5b414}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!USER\_AIC3X\_WritePllProgramming@{USER\_AIC3X\_WritePllProgramming}}
+\index{USER\_AIC3X\_WritePllProgramming@{USER\_AIC3X\_WritePllProgramming}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{USER\_AIC3X\_WritePllProgramming()}{USER\_AIC3X\_WritePllProgramming()}}
+{\footnotesize\ttfamily H\+A\+L\+\_\+\+Status\+Type\+Def U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Write\+Pll\+Programming (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$}]{haic3x,  }\item[{\mbox{\hyperlink{user__aic3x_8h_aea3698d9ee5ec60dfa843fa224d0bc59}{A\+I\+C3\+X\+\_\+\+P\+L\+L\+Programming\+\_\+\+Type\+Def}} $\ast$}]{p\+Pll\+Programming }\end{DoxyParamCaption})}
+
+
+
+Writes the pll programming config to the registers. 
+
+Writes the P\+LL programming to the registers by defining the register values for the pll programming register and reading the codec overflow register and then combining it with with the pll R values and then writing it back to the registers.
+
+
+\begin{DoxyParams}{Parameters}
+{\em haic3x} & Pointer to a A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def structure that contains the configuration information for the specified A\+I\+C3X. \\
+\hline
+{\em p\+Pll\+Programming} & Pointer to a A\+I\+C3\+X\+\_\+\+P\+L\+L\+Programming\+\_\+\+Typedef structure which defines the P\+LL programming. The values will be checked. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Hal Status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{user__aic3x_8c_a93e2210a031f9daca5df7c5edf576b78}\label{user__aic3x_8c_a93e2210a031f9daca5df7c5edf576b78}} 
+\index{user\_aic3x.c@{user\_aic3x.c}!USER\_AIC3X\_WriteSampleRateSel@{USER\_AIC3X\_WriteSampleRateSel}}
+\index{USER\_AIC3X\_WriteSampleRateSel@{USER\_AIC3X\_WriteSampleRateSel}!user\_aic3x.c@{user\_aic3x.c}}
+\doxysubsubsection{\texorpdfstring{USER\_AIC3X\_WriteSampleRateSel()}{USER\_AIC3X\_WriteSampleRateSel()}}
+{\footnotesize\ttfamily H\+A\+L\+\_\+\+Status\+Type\+Def U\+S\+E\+R\+\_\+\+A\+I\+C3\+X\+\_\+\+Write\+Sample\+Rate\+Sel (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{user__aic3x_8h_a2287c283cd386e7ab764ce2553de22a3}{A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def}} $\ast$}]{haic3x,  }\item[{\mbox{\hyperlink{user__aic3x_8h_a7dcb008f75acb497b8a2675dadc8c380}{A\+I\+C3\+X\+\_\+\+Sample\+Rate\+\_\+\+Type\+Def}}}]{sample\+Rate,  }\item[{\mbox{\hyperlink{user__aic3x_8h_aad52ee1e7ace6498236b8e046a537d18}{A\+I\+C3\+X\+\_\+\+Sample\+Rate\+Reg\+Map\+\_\+\+Typedef}} $\ast$}]{p\+Sample\+Rate\+Reg\+Map }\end{DoxyParamCaption})}
+
+
+
+Writes the sample rate config to the registers. 
+
+Sets the sample rate by first defining the needed register values and then combining these with the existing values. The sample rates will be identical for both A\+DC and D\+AC.
+
+
+\begin{DoxyParams}{Parameters}
+{\em haic3x} & Pointer to a A\+I\+C3\+X\+\_\+\+Handle\+Type\+Def structure that contains the configuration information for the specified A\+I\+C3X. \\
+\hline
+{\em sample\+Rate} & Sample rate to which the C\+O\+D\+EC should be set. \\
+\hline
+{\em p\+Sample\+Rate\+Reg\+Map} & Pointer to a A\+I\+C3\+X\+\_\+\+Sample\+Rate\+Reg\+Map\+\_\+\+Typedef structure which will be populated with the defined values. Can be set to N\+U\+LL if not needed. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Hal Status 
+\end{DoxyReturn}
