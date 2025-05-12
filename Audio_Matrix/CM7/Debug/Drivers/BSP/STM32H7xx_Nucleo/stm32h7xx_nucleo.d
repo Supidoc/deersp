@@ -1,6 +1,6 @@
 Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo.o: \
- D:/AppData/CubeIDE/Workspace/Audio_Matrix/Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo.c \
- D:/AppData/CubeIDE/Workspace/Audio_Matrix/Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo.c \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo.h \
  ../Core/Inc/stm32h7xx_nucleo_conf.h \
  ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal.h \
  ../Core/Inc/stm32h7xx_hal_conf.h \
@@ -34,8 +34,8 @@ Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo.o: \
  ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_sai_ex.h \
  ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart.h \
  ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart_ex.h \
- D:/AppData/CubeIDE/Workspace/Audio_Matrix/Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo_errno.h
-D:/AppData/CubeIDE/Workspace/Audio_Matrix/Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo.h:
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo_errno.h
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo.h:
 ../Core/Inc/stm32h7xx_nucleo_conf.h:
 ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal.h:
 ../Core/Inc/stm32h7xx_hal_conf.h:
@@ -69,4 +69,4 @@ D:/AppData/CubeIDE/Workspace/Audio_Matrix/Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx
 ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_sai_ex.h:
 ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart.h:
 ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart_ex.h:
-D:/AppData/CubeIDE/Workspace/Audio_Matrix/Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo_errno.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo_errno.h:

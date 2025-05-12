@@ -1,5 +1,5 @@
 Drivers/STM32H7xx_HAL_Driver/stm32h7xx_hal_cortex.o: \
- D:/AppData/CubeIDE/Workspace/Audio_Matrix/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_cortex.c \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_cortex.c \
  ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal.h \
  ../Core/Inc/stm32h7xx_hal_conf.h \
  ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_rcc.h \

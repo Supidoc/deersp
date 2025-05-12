@@ -153,7 +153,7 @@ typedef struct __AIC3X_OutputLevelControl_TypeDef {
 	bool Muted; /**< Output muted */
 	bool PowerDownDriveControl; /**< Weakly driven when false and high impedance when true */
 	bool VolumeControlStatus; /**< programmed gains applied when true and not applied when false */
-	bool PowerControl
+	bool PowerControl;
 /**< Fully Powered up when true and powered down when false */
 } AIC3X_OutputLevelControl_TypeDef;
 

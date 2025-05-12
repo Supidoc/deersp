@@ -50,6 +50,7 @@
 #define AUDIO_SAMPLE_SIZE sizeof(uint16_t)
 #define AUDIO_BUFFER_SIZE AUDIO_BUFFER_LENGTH*AUDIO_SAMPLE_SIZE
 #define AUDIO_BUFFER_LENGTH_HALF AUDIO_BUFFER_LENGTH/2
+#define AUDIO_BUFFER_SIZE_HALF AUDIO_BUFFER_SIZE/2
 
 #define SAI_BUFFER_LENGTH AUDIO_BUFFER_LENGTH*AUDIO_CHANNEL_COUNT
 #define SAI_BUFFER_SIZE SAI_BUFFER_LENGTH*AUDIO_SAMPLE_SIZE
@@ -75,15 +76,18 @@
 #define SAI_STATUS_TX_FULL_PENDING 0x40
 #define SAI_STATUS_TX_FULL_CPLT 0x80
 
+#define SAI_TX_UNDERRUN_ERROR 0x1
 
 
-// Set bit(s) in variable using bitmask
-#define SET_BITS(var, mask)     ((var) |= (mask))
+#define NUM_TAPS              29
 
-// Clear bit(s) in variable using bitmask
-#define CLEAR_BITS(var, mask)   ((var) &= ~(mask))
+#define ATOMIC_SECTION(code_block)  \
+    do {                            \
+        __disable_irq();            \
+        code_block                  \
+        __enable_irq();             \
+    } while (0)
 
-#define NUM_TAPS 32
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -102,25 +106,18 @@ MDMA_LinkNodeTypeDef node_mdma_channel0_sw_1;
 MDMA_LinkNodeTypeDef node_mdma_channel0_sw_2;
 MDMA_LinkNodeTypeDef node_mdma_channel0_sw_3;
 MDMA_LinkNodeTypeDef node_mdma_channel0_sw_4;
-MDMA_LinkNodeTypeDef node_mdma_channel0_sw_5;
-MDMA_LinkNodeTypeDef node_mdma_channel0_sw_6;
-MDMA_LinkNodeTypeDef node_mdma_channel0_sw_7;
-MDMA_LinkNodeTypeDef node_mdma_channel0_sw_8;
+
 MDMA_HandleTypeDef hmdma_mdma_channel2_sw_0;
+__attribute__ ((aligned (8)))
 MDMA_LinkNodeTypeDef node_mdma_channel2_sw_1;
 MDMA_LinkNodeTypeDef node_mdma_channel2_sw_2;
 MDMA_LinkNodeTypeDef node_mdma_channel2_sw_3;
 MDMA_LinkNodeTypeDef node_mdma_channel2_sw_4;
-MDMA_HandleTypeDef hmdma_mdma_channel1_sw_0;
-MDMA_LinkNodeTypeDef node_mdma_channel1_sw_1;
-MDMA_LinkNodeTypeDef node_mdma_channel1_sw_2;
-MDMA_LinkNodeTypeDef node_mdma_channel1_sw_3;
-MDMA_LinkNodeTypeDef node_mdma_channel1_sw_4;
 /* USER CODE BEGIN PV */
 AIC3X_HandleTypeDef aic3xHandle;
 
 
-__attribute__ ((aligned (8)))
+__attribute__ ((aligned (32)))
 volatile uint16_t sai_buffer_rx[SAI_BUFFER_LENGTH];
 __attribute__ ((aligned (8)))
 volatile uint16_t sai_buffer_tx[SAI_BUFFER_LENGTH];
@@ -142,9 +139,23 @@ volatile uint8_t audio_dsp_status = 0;
 volatile uint8_t audio_tx_status = 0;
 volatile uint8_t sai_status = 0;
 
-volatile bool startUp = true;
+volatile uint8_t memoryTransferError = 0;
+
+volatile bool startUpRx = true;
+volatile bool startUpTx = true;
 
 volatile uint32_t transfercounter = 0;
+
+bool halfComplete = false;
+
+static q15_t firStateQ15[AUDIO_BUFFER_LENGTH_HALF + NUM_TAPS - 1];
+
+const q15_t firCoeffsQ15[NUM_TAPS] = {
+  -0.0018225230f, -0.0015879294f, +0.0000000000f, +0.0036977508f, +0.0080754303f, +0.0085302217f, -0.0000000000f, -0.0173976984f,
+  -0.0341458607f, -0.0333591565f, +0.0000000000f, +0.0676308395f, +0.1522061835f, +0.2229246956f, +0.2504960933f, +0.2229246956f,
+  +0.1522061835f, +0.0676308395f, +0.0000000000f, -0.0333591565f, -0.0341458607f, -0.0173976984f, -0.0000000000f, +0.0085302217f,
+  +0.0080754303f, +0.0036977508f, +0.0000000000f, -0.0015879294f, -0.0018225230f
+};
 
 /* USER CODE END PV */
 
@@ -240,6 +251,12 @@ int main(void)
   MX_I2C2_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
+
+  arm_fir_instance_q15 S;
+  //arm_status status;
+
+  //arm_fir_fast_q15(&S, NUM_TAPS, firCoeffsQ15, firStateQ15, AUDIO_BUFFER_LENGTH_HALF);
+
   HAL_StatusTypeDef status;
   HAL_StatusTypeDef saiStatus;
 
@@ -248,6 +265,7 @@ int main(void)
 	__HAL_SAI_ENABLE(&hsai_BlockA1);
 	__HAL_SAI_ENABLE(&hsai_BlockB1);
 	SET_BIT(audio_rx_status, AUDIO_STATUS_L_HALF_PENDING);
+
 	HAL_Delay(1000);
 
 	status = codecSetup();
@@ -264,7 +282,7 @@ int main(void)
 
   /* Initialize User push-button without interrupt mode. */
   BSP_PB_Init(BUTTON_USER, BUTTON_MODE_GPIO);
-  bool halfComplete = false;
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1) {
@@ -274,157 +292,264 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
 		//Check for completed SAI RX and trigger tranfers from sai to audio buffers
+		__disable_irq();
 		if (READ_BIT(sai_status,
 				SAI_STATUS_RX_HALF_CPLT) && READ_BIT(audio_rx_status, AUDIO_STATUS_L_HALF_PENDING) == false
-				&& READ_BIT(audio_rx_status, AUDIO_STATUS_L_HALF_CPLT) == false) {
+				&& READ_BIT(audio_rx_status, AUDIO_STATUS_L_HALF_CPLT) == false)
+		{
 			//TODO Check if previous TX was completed
+			__enable_irq();
 
 			SET_BIT(audio_rx_status, AUDIO_STATUS_L_HALF_PENDING);
-			if (startUp) {
-				startUp = false;
+			if (startUpRx)
+			{
+				startUpRx = false;
 				HAL_MDMA_Start_IT(&hmdma_mdma_channel0_sw_0,
 						(uint32_t) sai_buffer_rx,
-						(uint32_t) audio_buffer_rx_ch1_l, AUDIO_BUFFER_SIZE / 2,
+						(uint32_t) audio_buffer_rx_ch1_l, AUDIO_BUFFER_SIZE_HALF,
 						1);
-			} else {
+			}
+			else
+			{
+				if (READ_BIT(audio_tx_status, AUDIO_STATUS_L_CPLT) == false
+						&& READ_BIT(audio_tx_status, AUDIO_STATUS_R_CPLT)
+								== false)
+				{
+					__BKPT();
+				}
 				HAL_MDMA_GenerateSWRequest(&hmdma_mdma_channel0_sw_0);
+
 			}
 
-		} else if (READ_BIT(audio_rx_status,
+		}
+		else if (READ_BIT(audio_rx_status,
 				AUDIO_STATUS_L_HALF_CPLT) && READ_BIT(audio_rx_status, AUDIO_STATUS_R_HALF_PENDING) == false
-				&& READ_BIT(audio_rx_status, AUDIO_STATUS_R_HALF_CPLT) == false) {
+				&& READ_BIT(audio_rx_status, AUDIO_STATUS_R_HALF_CPLT) == false)
+		{
+			__enable_irq();
+
 			SET_BIT(audio_rx_status, AUDIO_STATUS_R_HALF_PENDING);
 
 			HAL_MDMA_GenerateSWRequest(&hmdma_mdma_channel0_sw_0);
-		} else if (READ_BIT(sai_status,
+		}
+		else if (READ_BIT(sai_status,
 				SAI_STATUS_RX_FULL_CPLT) && READ_BIT(audio_rx_status, AUDIO_STATUS_L_PENDING) == false
-				&& READ_BIT(audio_rx_status, AUDIO_STATUS_L_CPLT) == false) {
+				&& READ_BIT(audio_rx_status, AUDIO_STATUS_L_CPLT) == false)
+		{
 			//TODO Check if previous TX was completed
+			__enable_irq();
 
+			if (READ_BIT(audio_tx_status, AUDIO_STATUS_L_HALF_CPLT) == false
+					&& READ_BIT(audio_tx_status, AUDIO_STATUS_R_HALF_CPLT)
+							== false)
+			{
+				__BKPT();
+			}
 			SET_BIT(audio_rx_status, AUDIO_STATUS_L_PENDING);
 
 			HAL_MDMA_GenerateSWRequest(&hmdma_mdma_channel0_sw_0);
-		} else if (READ_BIT(audio_rx_status,
+		}
+		else if (READ_BIT(audio_rx_status,
 				AUDIO_STATUS_L_CPLT) && READ_BIT(audio_rx_status, AUDIO_STATUS_R_PENDING) == false
-				&& READ_BIT(audio_rx_status, AUDIO_STATUS_R_CPLT) == false) {
+				&& READ_BIT(audio_rx_status, AUDIO_STATUS_R_CPLT) == false)
+		{
+			__enable_irq();
+
 			SET_BIT(audio_rx_status, AUDIO_STATUS_R_PENDING);
 
 			HAL_MDMA_GenerateSWRequest(&hmdma_mdma_channel0_sw_0);
 		}
+		else
+		{
+			__enable_irq();
+		}
 
 		//Check for completed audio rx transfers and run dsp
 
-		if(READ_BIT(audio_rx_status, AUDIO_STATUS_L_HALF_CPLT)
-				&& READ_BIT(audio_dsp_status, AUDIO_STATUS_L_HALF_PENDING) == false
+		__disable_irq();
+		if (READ_BIT(audio_rx_status,
+				AUDIO_STATUS_L_HALF_CPLT) && READ_BIT(audio_dsp_status, AUDIO_STATUS_L_HALF_PENDING) == false
 				&& READ_BIT(audio_dsp_status, AUDIO_STATUS_L_HALF_CPLT) == false)
 		{
-			SET_BITS(audio_dsp_status, AUDIO_STATUS_L_HALF_PENDING);
+			__enable_irq();
+			SET_BIT(audio_dsp_status, AUDIO_STATUS_L_HALF_PENDING);
 			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_L_HALF_CPLT);
 
 			//Do DSP of left channel first half here
+			memcpy((void*) audio_buffer_rx_ch1_l,
+					(void*) audio_buffer_tx_ch1_l, AUDIO_BUFFER_LENGTH_HALF * AUDIO_SAMPLE_SIZE);
 
 			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_L_HALF_PENDING);
 			SET_BIT(audio_dsp_status, AUDIO_STATUS_L_HALF_CPLT);
-		}else if(READ_BIT(audio_rx_status, AUDIO_STATUS_R_HALF_CPLT)
-				&& READ_BIT(audio_dsp_status, AUDIO_STATUS_R_HALF_PENDING) == false
+		}
+		else if (READ_BIT(audio_rx_status,
+				AUDIO_STATUS_R_HALF_CPLT) && READ_BIT(audio_dsp_status, AUDIO_STATUS_R_HALF_PENDING) == false
 				&& READ_BIT(audio_dsp_status, AUDIO_STATUS_R_HALF_CPLT) == false)
 		{
+			__enable_irq();
+
 			SET_BIT(audio_dsp_status, AUDIO_STATUS_R_HALF_PENDING);
 			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_R_HALF_CPLT);
 
 			//Do DSP of right channel first half here
+			memcpy((void*) audio_buffer_rx_ch1_r,
+					(void*) audio_buffer_tx_ch1_r, AUDIO_BUFFER_LENGTH_HALF * AUDIO_SAMPLE_SIZE);
 
-			CLEAR_BITS(audio_dsp_status, AUDIO_STATUS_R_HALF_PENDING);
-			SET_BITS(audio_dsp_status, AUDIO_STATUS_R_HALF_CPLT);
+
 		}
-		else if(READ_BIT(audio_rx_status, AUDIO_STATUS_L_CPLT)
-				&& READ_BIT(audio_dsp_status, AUDIO_STATUS_L_PENDING) == false
+		else if (READ_BIT(audio_rx_status,
+				AUDIO_STATUS_L_CPLT) && READ_BIT(audio_dsp_status, AUDIO_STATUS_L_PENDING) == false
 				&& READ_BIT(audio_dsp_status, AUDIO_STATUS_L_CPLT) == false)
 		{
-			SET_BITS(audio_dsp_status, AUDIO_STATUS_L_PENDING);
-			CLEAR_BITS(audio_dsp_status, AUDIO_STATUS_L_CPLT);
+			__enable_irq();
+
+			SET_BIT(audio_dsp_status, AUDIO_STATUS_L_PENDING);
+			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_L_CPLT);
 
 			//Do DSP of left channel second half here
+			memcpy((void*) audio_buffer_rx_ch1_l + AUDIO_BUFFER_LENGTH_HALF,
+					(void*) audio_buffer_tx_ch1_l + AUDIO_BUFFER_LENGTH_HALF, AUDIO_BUFFER_LENGTH_HALF * AUDIO_SAMPLE_SIZE);
 
-			CLEAR_BITS(audio_dsp_status, AUDIO_STATUS_L_PENDING);
-			SET_BITS(audio_dsp_status, AUDIO_STATUS_L_CPLT);
-		}else if(READ_BIT(audio_rx_status, AUDIO_STATUS_R_CPLT)
-				&& READ_BIT(audio_dsp_status, AUDIO_STATUS_R_PENDING) == false
+			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_L_PENDING);
+			SET_BIT(audio_dsp_status, AUDIO_STATUS_L_CPLT);
+		}
+		else if (READ_BIT(audio_rx_status,
+				AUDIO_STATUS_R_CPLT) && READ_BIT(audio_dsp_status, AUDIO_STATUS_R_PENDING) == false
 				&& READ_BIT(audio_dsp_status, AUDIO_STATUS_R_CPLT) == false)
 		{
-			SET_BITS(audio_dsp_status, AUDIO_STATUS_R_PENDING);
-			CLEAR_BITS(audio_dsp_status, AUDIO_STATUS_R_CPLT);
+			__enable_irq();
+
+			SET_BIT(audio_dsp_status, AUDIO_STATUS_R_PENDING);
+			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_R_CPLT);
 
 			//Do DSP of left channel second half here
+			memcpy((void*) audio_buffer_rx_ch1_r + AUDIO_BUFFER_LENGTH_HALF,
+					(void*) audio_buffer_tx_ch1_r + AUDIO_BUFFER_LENGTH_HALF, AUDIO_BUFFER_LENGTH_HALF * AUDIO_SAMPLE_SIZE);
 
-			CLEAR_BITS(audio_dsp_status, AUDIO_STATUS_R_PENDING);
-			SET_BITS(audio_dsp_status, AUDIO_STATUS_R_CPLT);
+			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_R_PENDING);
+			SET_BIT(audio_dsp_status, AUDIO_STATUS_R_CPLT);
+		}
+		else
+		{
+			__enable_irq();
 		}
 
+
+
 		//check for completed dsp and trigger tranfers from audio to sai buffer
-		if(READ_BIT(audio_dsp_status, AUDIO_STATUS_L_HALF_CPLT)
-				&& READ_BIT(audio_rx_status, AUDIO_STATUS_R_HALF_CPLT)
+		__disable_irq();
+		if (READ_BIT(audio_dsp_status,
+				AUDIO_STATUS_L_HALF_CPLT) && READ_BIT(audio_rx_status, AUDIO_STATUS_R_HALF_CPLT)
 				&& READ_BIT(audio_tx_status, AUDIO_STATUS_L_HALF_PENDING) == false
 				&& READ_BIT(audio_tx_status, AUDIO_STATUS_L_HALF_CPLT) == false)
 		{
-			SET_BITS(audio_tx_status, AUDIO_STATUS_L_HALF_PENDING);
-			CLEAR_BITS(audio_tx_status, AUDIO_STATUS_L_HALF_CPLT);
-			HAL_MDMA_GenerateSWRequest(&hmdma_mdma_channel0_sw_0);
-		}else if(READ_BIT(audio_dsp_status, AUDIO_STATUS_R_HALF_CPLT) &&
-				READ_BIT(audio_tx_status, AUDIO_STATUS_L_HALF_CPLT)
-				&& READ_BIT(audio_tx_status, AUDIO_STATUS_R_HALF_PENDING) == false
-				&& READ_BIT(audio_tx_status, AUDIO_STATUS_R_HALF_CPLT) == false)
-		{
-			SET_BITS(audio_tx_status, AUDIO_STATUS_R_HALF_PENDING);
-			CLEAR_BITS(audio_tx_status, AUDIO_STATUS_R_HALF_CPLT);
-			HAL_MDMA_GenerateSWRequest(&hmdma_mdma_channel0_sw_0);
-		}else if(READ_BIT(audio_dsp_status, AUDIO_STATUS_L_CPLT) &&
-				READ_BIT(audio_rx_status, AUDIO_STATUS_R_CPLT)
-				&& READ_BIT(audio_tx_status, AUDIO_STATUS_L_PENDING) == false
-				&& READ_BIT(audio_tx_status, AUDIO_STATUS_L_CPLT) == false)
-		{
-			SET_BITS(audio_tx_status, AUDIO_STATUS_L_PENDING);
-			CLEAR_BITS(audio_tx_status, AUDIO_STATUS_L_CPLT);
-			HAL_MDMA_GenerateSWRequest(&hmdma_mdma_channel0_sw_0);
-		}else if(READ_BIT(audio_dsp_status, AUDIO_STATUS_R_CPLT) &&
-				READ_BIT(audio_tx_status, AUDIO_STATUS_L_CPLT)
-				&& READ_BIT(audio_tx_status, AUDIO_STATUS_R_PENDING) == false
-				&& READ_BIT(audio_tx_status, AUDIO_STATUS_R_CPLT) == false)
-		{
-			SET_BITS(audio_tx_status, AUDIO_STATUS_R_PENDING);
-			CLEAR_BITS(audio_tx_status, AUDIO_STATUS_R_CPLT);
-			HAL_MDMA_GenerateSWRequest(&hmdma_mdma_channel0_sw_0);
+			__enable_irq();
+
+			SET_BIT(audio_tx_status, AUDIO_STATUS_L_HALF_PENDING);
+			CLEAR_BIT(audio_tx_status, AUDIO_STATUS_L_HALF_CPLT);
+			if (startUpTx)
+			{
+				startUpTx = false;
+				HAL_MDMA_Start_IT(&hmdma_mdma_channel2_sw_0,
+						(uint32_t) audio_buffer_tx_ch1_l,
+						(uint32_t) sai_buffer_tx, AUDIO_BUFFER_SIZE_HALF,
+						1);
+			}
+			else{
+				HAL_MDMA_GenerateSWRequest(&hmdma_mdma_channel2_sw_0);
+			}
 		}
-		if(BSP_PB_GetState(BUTTON_USER) == GPIO_PIN_SET){
-		halfComplete = halfComplete==false;
-
-		if(halfComplete){
-
-			CLEAR_BIT(sai_status, SAI_STATUS_RX_HALF_PENDING);
-			SET_BIT(sai_status, SAI_STATUS_RX_HALF_CPLT);
-			CLEAR_BIT(sai_status, SAI_STATUS_RX_FULL_CPLT);
-			SET_BIT(sai_status, SAI_STATUS_RX_FULL_PENDING);
-
-			CLEAR_BIT(audio_rx_status, AUDIO_STATUS_HALF_PART);
-			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_HALF_PART);
-			CLEAR_BIT(audio_tx_status, AUDIO_STATUS_HALF_PART);
-
-		}else
+		else if (READ_BIT(audio_dsp_status, AUDIO_STATUS_R_HALF_CPLT) &&
+		READ_BIT(audio_tx_status, AUDIO_STATUS_L_HALF_CPLT)
+		&& READ_BIT(audio_tx_status, AUDIO_STATUS_R_HALF_PENDING) == false
+		&& READ_BIT(audio_tx_status, AUDIO_STATUS_R_HALF_CPLT) == false)
 		{
+			__enable_irq();
 
-			CLEAR_BIT(sai_status, SAI_STATUS_RX_FULL_PENDING);
-			SET_BIT(sai_status, SAI_STATUS_RX_FULL_CPLT);
-			CLEAR_BIT(sai_status, SAI_STATUS_RX_HALF_CPLT);
-			SET_BIT(sai_status, SAI_STATUS_RX_HALF_PENDING);
-
-			CLEAR_BIT(audio_rx_status, AUDIO_STATUS_FULL);
-			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_FULL);
-			CLEAR_BIT(audio_tx_status, AUDIO_STATUS_FULL);
-
+			SET_BIT(audio_tx_status, AUDIO_STATUS_R_HALF_PENDING);
+			CLEAR_BIT(audio_tx_status, AUDIO_STATUS_R_HALF_CPLT);
+			HAL_MDMA_GenerateSWRequest(&hmdma_mdma_channel2_sw_0);
 		}
-		HAL_Delay(2000);
-		HAL_Delay(1);
+		else if (READ_BIT(audio_dsp_status, AUDIO_STATUS_L_CPLT) &&
+		READ_BIT(audio_rx_status, AUDIO_STATUS_R_CPLT)
+		&& READ_BIT(audio_tx_status, AUDIO_STATUS_L_PENDING) == false
+		&& READ_BIT(audio_tx_status, AUDIO_STATUS_L_CPLT) == false)
+		{
+			__enable_irq();
+
+			SET_BIT(audio_tx_status, AUDIO_STATUS_L_PENDING);
+			CLEAR_BIT(audio_tx_status, AUDIO_STATUS_L_CPLT);
+			HAL_MDMA_GenerateSWRequest(&hmdma_mdma_channel2_sw_0);
 		}
+		else if (READ_BIT(audio_dsp_status, AUDIO_STATUS_R_CPLT) &&
+		READ_BIT(audio_tx_status, AUDIO_STATUS_L_CPLT)
+		&& READ_BIT(audio_tx_status, AUDIO_STATUS_R_PENDING) == false
+		&& READ_BIT(audio_tx_status, AUDIO_STATUS_R_CPLT) == false)
+		{
+			__enable_irq();
+
+			SET_BIT(audio_tx_status, AUDIO_STATUS_R_PENDING);
+			CLEAR_BIT(audio_tx_status, AUDIO_STATUS_R_CPLT);
+			HAL_MDMA_GenerateSWRequest(&hmdma_mdma_channel2_sw_0);
+		}
+		else
+		{
+			__enable_irq();
+		}
+
+
+		if(READ_BIT(audio_dsp_status, AUDIO_STATUS_L_HALF_PENDING)){
+
+
+
+			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_L_HALF_PENDING);
+			SET_BIT(audio_dsp_status, AUDIO_STATUS_L_HALF_CPLT);
+		}
+		else if(READ_BIT(audio_dsp_status, AUDIO_STATUS_R_HALF_PENDING)){
+
+			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_R_HALF_PENDING);
+			SET_BIT(audio_dsp_status, AUDIO_STATUS_R_HALF_CPLT);
+		}
+		else if(READ_BIT(audio_dsp_status, AUDIO_STATUS_L_PENDING)){
+
+			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_L_PENDING);
+			SET_BIT(audio_dsp_status, AUDIO_STATUS_L_CPLT);
+		}
+		else if(READ_BIT(audio_dsp_status, AUDIO_STATUS_R_PENDING)){
+
+			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_R_PENDING);
+			SET_BIT(audio_dsp_status, AUDIO_STATUS_R_CPLT);
+		}
+//		if(BSP_PB_GetState(BUTTON_USER) == GPIO_PIN_SET){
+//		halfComplete = halfComplete==false;
+//
+//		if(halfComplete){
+//
+//			CLEAR_BIT(sai_status, SAI_STATUS_RX_HALF_PENDING);
+//			SET_BIT(sai_status, SAI_STATUS_RX_HALF_CPLT);
+//			CLEAR_BIT(sai_status, SAI_STATUS_RX_FULL_CPLT);
+//			SET_BIT(sai_status, SAI_STATUS_RX_FULL_PENDING);
+//
+//			CLEAR_BIT(audio_rx_status, AUDIO_STATUS_HALF_PART);
+//			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_HALF_PART);
+//			CLEAR_BIT(audio_tx_status, AUDIO_STATUS_HALF_PART);
+//
+//		}else
+//		{
+//
+//			CLEAR_BIT(sai_status, SAI_STATUS_RX_FULL_PENDING);
+//			SET_BIT(sai_status, SAI_STATUS_RX_FULL_CPLT);
+//			CLEAR_BIT(sai_status, SAI_STATUS_RX_HALF_CPLT);
+//			SET_BIT(sai_status, SAI_STATUS_RX_HALF_PENDING);
+//
+//			CLEAR_BIT(audio_rx_status, AUDIO_STATUS_FULL);
+//			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_FULL);
+//			CLEAR_BIT(audio_tx_status, AUDIO_STATUS_FULL);
+//
+//		}
+//		HAL_Delay(2000);
+//		HAL_Delay(1);
+//		}
 
 	}
   /* USER CODE END 3 */
@@ -476,14 +601,14 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
                               |RCC_CLOCKTYPE_D3PCLK1|RCC_CLOCKTYPE_D1PCLK1;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV4;
+  RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV2;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB3CLKDivider = RCC_APB3_DIV2;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV2;
   RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -689,20 +814,11 @@ static void MX_DMA_Init(void)
   *   node_mdma_channel0_sw_2
   *   node_mdma_channel0_sw_3
   *   node_mdma_channel0_sw_4
-  *   node_mdma_channel0_sw_5
-  *   node_mdma_channel0_sw_6
-  *   node_mdma_channel0_sw_7
-  *   node_mdma_channel0_sw_8
   *   hmdma_mdma_channel2_sw_0
   *   node_mdma_channel2_sw_1
   *   node_mdma_channel2_sw_2
   *   node_mdma_channel2_sw_3
   *   node_mdma_channel2_sw_4
-  *   hmdma_mdma_channel1_sw_0
-  *   node_mdma_channel1_sw_1
-  *   node_mdma_channel1_sw_2
-  *   node_mdma_channel1_sw_3
-  *   node_mdma_channel1_sw_4
   */
 static void MX_MDMA_Init(void)
 {
@@ -751,9 +867,9 @@ static void MX_MDMA_Init(void)
   nodeConfig.Init.DestBlockAddressOffset = 0;
   nodeConfig.PostRequestMaskAddress = 0;
   nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) sai_buffer_rx+AUDIO_SAMPLE_SIZE;
-  nodeConfig.DstAddress = (uint32_t) audio_buffer_rx_ch1_r;
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_LENGTH;
+  nodeConfig.SrcAddress = (uint32_t) &sai_buffer_rx[1];
+  nodeConfig.DstAddress = (uint32_t) &audio_buffer_rx_ch1_r[0];
+  nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
   nodeConfig.BlockCount = 1;
   if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel0_sw_1, &nodeConfig) != HAL_OK)
   {
@@ -775,8 +891,8 @@ static void MX_MDMA_Init(void)
   nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
   nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
   nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  nodeConfig.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
-  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_WORD;
+  nodeConfig.Init.SourceInc = MDMA_SRC_INC_WORD;
+  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_HALFWORD;
   nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
   nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
   nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
@@ -787,9 +903,9 @@ static void MX_MDMA_Init(void)
   nodeConfig.Init.DestBlockAddressOffset = 0;
   nodeConfig.PostRequestMaskAddress = 0;
   nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) audio_buffer_tx_ch1_l;
-  nodeConfig.DstAddress = (uint32_t) sai_buffer_tx;
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_LENGTH;
+  nodeConfig.SrcAddress = (uint32_t) &sai_buffer_rx[SAI_BUFFER_LENGTH_HALF-1];
+  nodeConfig.DstAddress = (uint32_t) &audio_buffer_rx_ch1_l[AUDIO_BUFFER_LENGTH_HALF-1];
+  nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
   nodeConfig.BlockCount = 1;
   if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel0_sw_2, &nodeConfig) != HAL_OK)
   {
@@ -810,8 +926,8 @@ static void MX_MDMA_Init(void)
   nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
   nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
   nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  nodeConfig.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
-  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_WORD;
+  nodeConfig.Init.SourceInc = MDMA_SRC_INC_WORD;
+  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_HALFWORD;
   nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
   nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
   nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
@@ -822,9 +938,9 @@ static void MX_MDMA_Init(void)
   nodeConfig.Init.DestBlockAddressOffset = 0;
   nodeConfig.PostRequestMaskAddress = 0;
   nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) audio_buffer_tx_ch1_r;
-  nodeConfig.DstAddress = (uint32_t) sai_buffer_tx+AUDIO_SAMPLE_SIZE;
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_LENGTH;
+  nodeConfig.SrcAddress = (uint32_t) &sai_buffer_rx[SAI_BUFFER_LENGTH_HALF];
+  nodeConfig.DstAddress = (uint32_t) &audio_buffer_rx_ch1_r[AUDIO_BUFFER_LENGTH_HALF-1];
+  nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
   nodeConfig.BlockCount = 1;
   if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel0_sw_3, &nodeConfig) != HAL_OK)
   {
@@ -857,9 +973,9 @@ static void MX_MDMA_Init(void)
   nodeConfig.Init.DestBlockAddressOffset = 0;
   nodeConfig.PostRequestMaskAddress = 0;
   nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) sai_buffer_rx+SAI_BUFFER_LENGTH_HALF;
-  nodeConfig.DstAddress = (uint32_t) audio_buffer_rx_ch1_l+AUDIO_BUFFER_LENGTH_HALF;
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_LENGTH;
+  nodeConfig.SrcAddress = (uint32_t) &sai_buffer_rx[0];
+  nodeConfig.DstAddress = (uint32_t) &audio_buffer_rx_ch1_l[0];
+  nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
   nodeConfig.BlockCount = 1;
   if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel0_sw_4, &nodeConfig) != HAL_OK)
   {
@@ -875,146 +991,6 @@ static void MX_MDMA_Init(void)
     Error_Handler();
   }
 
-  /* Initialize MDMA link node according to specified parameters */
-  nodeConfig.Init.Request = MDMA_REQUEST_SW;
-  nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
-  nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  nodeConfig.Init.SourceInc = MDMA_SRC_INC_WORD;
-  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_HALFWORD;
-  nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  nodeConfig.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  nodeConfig.Init.SourceBlockAddressOffset = 0;
-  nodeConfig.Init.DestBlockAddressOffset = 0;
-  nodeConfig.PostRequestMaskAddress = 0;
-  nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) sai_buffer_rx+SAI_BUFFER_LENGTH_HALF+AUDIO_SAMPLE_SIZE;
-  nodeConfig.DstAddress = (uint32_t) audio_buffer_rx_ch1_r+AUDIO_BUFFER_LENGTH_HALF;
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_LENGTH;
-  nodeConfig.BlockCount = 1;
-  if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel0_sw_5, &nodeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN mdma_channel0_sw_5 */
-
-  /* USER CODE END mdma_channel0_sw_5 */
-
-  /* Connect a node to the linked list */
-  if (HAL_MDMA_LinkedList_AddNode(&hmdma_mdma_channel0_sw_0, &node_mdma_channel0_sw_5, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Initialize MDMA link node according to specified parameters */
-  nodeConfig.Init.Request = MDMA_REQUEST_SW;
-  nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
-  nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  nodeConfig.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
-  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_WORD;
-  nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  nodeConfig.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  nodeConfig.Init.SourceBlockAddressOffset = 0;
-  nodeConfig.Init.DestBlockAddressOffset = 0;
-  nodeConfig.PostRequestMaskAddress = 0;
-  nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) audio_buffer_tx_ch1_l+AUDIO_BUFFER_LENGTH_HALF;
-  nodeConfig.DstAddress = (uint32_t) sai_buffer_tx+SAI_BUFFER_LENGTH_HALF;
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_LENGTH;
-  nodeConfig.BlockCount = 1;
-  if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel0_sw_6, &nodeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN mdma_channel0_sw_6 */
-
-  /* USER CODE END mdma_channel0_sw_6 */
-
-  /* Connect a node to the linked list */
-  if (HAL_MDMA_LinkedList_AddNode(&hmdma_mdma_channel0_sw_0, &node_mdma_channel0_sw_6, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Initialize MDMA link node according to specified parameters */
-  nodeConfig.Init.Request = MDMA_REQUEST_SW;
-  nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
-  nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  nodeConfig.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
-  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_WORD;
-  nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  nodeConfig.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  nodeConfig.Init.SourceBlockAddressOffset = 0;
-  nodeConfig.Init.DestBlockAddressOffset = 0;
-  nodeConfig.PostRequestMaskAddress = 0;
-  nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) audio_buffer_tx_ch1_r+AUDIO_BUFFER_LENGTH_HALF;
-  nodeConfig.DstAddress = (uint32_t) sai_buffer_tx+SAI_BUFFER_LENGTH_HALF+AUDIO_SAMPLE_SIZE;
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_LENGTH;
-  nodeConfig.BlockCount = 1;
-  if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel0_sw_7, &nodeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN mdma_channel0_sw_7 */
-
-  /* USER CODE END mdma_channel0_sw_7 */
-
-  /* Connect a node to the linked list */
-  if (HAL_MDMA_LinkedList_AddNode(&hmdma_mdma_channel0_sw_0, &node_mdma_channel0_sw_7, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Initialize MDMA link node according to specified parameters */
-  nodeConfig.Init.Request = MDMA_REQUEST_SW;
-  nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
-  nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  nodeConfig.Init.SourceInc = MDMA_SRC_INC_WORD;
-  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_HALFWORD;
-  nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  nodeConfig.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  nodeConfig.Init.SourceBlockAddressOffset = 0;
-  nodeConfig.Init.DestBlockAddressOffset = 0;
-  nodeConfig.PostRequestMaskAddress = 0;
-  nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) sai_buffer_rx;
-  nodeConfig.DstAddress = (uint32_t) audio_buffer_rx_ch1_l;
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_LENGTH;
-  nodeConfig.BlockCount = 1;
-  if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel0_sw_8, &nodeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN mdma_channel0_sw_8 */
-
-  /* USER CODE END mdma_channel0_sw_8 */
-
-  /* Connect a node to the linked list */
-  if (HAL_MDMA_LinkedList_AddNode(&hmdma_mdma_channel0_sw_0, &node_mdma_channel0_sw_8, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
   /* Make the linked list circular by connecting the last node to the first */
   if (HAL_MDMA_LinkedList_EnableCircularMode(&hmdma_mdma_channel0_sw_0) != HAL_OK)
   {
@@ -1026,7 +1002,7 @@ static void MX_MDMA_Init(void)
   hmdma_mdma_channel2_sw_0.Instance = MDMA_Channel2;
   hmdma_mdma_channel2_sw_0.Init.Request = MDMA_REQUEST_SW;
   hmdma_mdma_channel2_sw_0.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  hmdma_mdma_channel2_sw_0.Init.Priority = MDMA_PRIORITY_HIGH;
+  hmdma_mdma_channel2_sw_0.Init.Priority = MDMA_PRIORITY_MEDIUM;
   hmdma_mdma_channel2_sw_0.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
   hmdma_mdma_channel2_sw_0.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
   hmdma_mdma_channel2_sw_0.Init.DestinationInc = MDMA_DEST_INC_WORD;
@@ -1046,7 +1022,7 @@ static void MX_MDMA_Init(void)
   /* Initialize MDMA link node according to specified parameters */
   nodeConfig.Init.Request = MDMA_REQUEST_SW;
   nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
+  nodeConfig.Init.Priority = MDMA_PRIORITY_MEDIUM;
   nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
   nodeConfig.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
   nodeConfig.Init.DestinationInc = MDMA_DEST_INC_WORD;
@@ -1060,16 +1036,17 @@ static void MX_MDMA_Init(void)
   nodeConfig.Init.DestBlockAddressOffset = 0;
   nodeConfig.PostRequestMaskAddress = 0;
   nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = audio_buffer_tx_ch1_l;
-  nodeConfig.DstAddress = sai_buffer_tx;
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_LENGTH;
+  nodeConfig.SrcAddress = (uint32_t) &audio_buffer_tx_ch1_r[0];
+  nodeConfig.DstAddress = (uint32_t) &sai_buffer_tx[1];
+  nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
   nodeConfig.BlockCount = 1;
   if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel2_sw_1, &nodeConfig) != HAL_OK)
   {
     Error_Handler();
   }
   /* USER CODE BEGIN mdma_channel2_sw_1 */
-
+  HAL_MDMA_RegisterCallback(&hmdma_mdma_channel2_sw_0, HAL_MDMA_XFER_BLOCKCPLT_CB_ID, MDMA_TxXferBlockCpltCallback);
+  HAL_MDMA_RegisterCallback(&hmdma_mdma_channel2_sw_0, HAL_MDMA_XFER_ERROR_CB_ID, MDMA_TxErrorCallback);
   /* USER CODE END mdma_channel2_sw_1 */
 
   /* Connect a node to the linked list */
@@ -1081,7 +1058,7 @@ static void MX_MDMA_Init(void)
   /* Initialize MDMA link node according to specified parameters */
   nodeConfig.Init.Request = MDMA_REQUEST_SW;
   nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
+  nodeConfig.Init.Priority = MDMA_PRIORITY_MEDIUM;
   nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
   nodeConfig.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
   nodeConfig.Init.DestinationInc = MDMA_DEST_INC_WORD;
@@ -1095,9 +1072,9 @@ static void MX_MDMA_Init(void)
   nodeConfig.Init.DestBlockAddressOffset = 0;
   nodeConfig.PostRequestMaskAddress = 0;
   nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = audio_buffer_tx_ch1_r;
-  nodeConfig.DstAddress = sai_buffer_tx+1;
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_LENGTH;
+  nodeConfig.SrcAddress = (uint32_t) &audio_buffer_tx_ch1_l[AUDIO_BUFFER_LENGTH_HALF-1];
+  nodeConfig.DstAddress = (uint32_t) &sai_buffer_tx[SAI_BUFFER_LENGTH_HALF-1];
+  nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
   nodeConfig.BlockCount = 1;
   if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel2_sw_2, &nodeConfig) != HAL_OK)
   {
@@ -1116,7 +1093,7 @@ static void MX_MDMA_Init(void)
   /* Initialize MDMA link node according to specified parameters */
   nodeConfig.Init.Request = MDMA_REQUEST_SW;
   nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
+  nodeConfig.Init.Priority = MDMA_PRIORITY_MEDIUM;
   nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
   nodeConfig.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
   nodeConfig.Init.DestinationInc = MDMA_DEST_INC_WORD;
@@ -1130,9 +1107,9 @@ static void MX_MDMA_Init(void)
   nodeConfig.Init.DestBlockAddressOffset = 0;
   nodeConfig.PostRequestMaskAddress = 0;
   nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = audio_buffer_tx_ch1_l+AUDIO_BUFFER_LENGTH_HALF;
-  nodeConfig.DstAddress = sai_buffer_tx+SAI_BUFFER_LENGTH_HALF;
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_LENGTH;
+  nodeConfig.SrcAddress = (uint32_t) &audio_buffer_tx_ch1_r[AUDIO_BUFFER_LENGTH_HALF-1];
+  nodeConfig.DstAddress = (uint32_t) &sai_buffer_tx[SAI_BUFFER_LENGTH_HALF];
+  nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
   nodeConfig.BlockCount = 1;
   if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel2_sw_3, &nodeConfig) != HAL_OK)
   {
@@ -1151,7 +1128,7 @@ static void MX_MDMA_Init(void)
   /* Initialize MDMA link node according to specified parameters */
   nodeConfig.Init.Request = MDMA_REQUEST_SW;
   nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
+  nodeConfig.Init.Priority = MDMA_PRIORITY_MEDIUM;
   nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
   nodeConfig.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
   nodeConfig.Init.DestinationInc = MDMA_DEST_INC_WORD;
@@ -1165,9 +1142,9 @@ static void MX_MDMA_Init(void)
   nodeConfig.Init.DestBlockAddressOffset = 0;
   nodeConfig.PostRequestMaskAddress = 0;
   nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = audio_buffer_tx_ch1_r+AUDIO_BUFFER_LENGTH_HALF;
-  nodeConfig.DstAddress = sai_buffer_tx+SAI_BUFFER_LENGTH_HALF+1;
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_LENGTH;
+  nodeConfig.SrcAddress = (uint32_t) &audio_buffer_tx_ch1_l[0];
+  nodeConfig.DstAddress = (uint32_t) &sai_buffer_tx[0];
+  nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
   nodeConfig.BlockCount = 1;
   if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel2_sw_4, &nodeConfig) != HAL_OK)
   {
@@ -1185,175 +1162,6 @@ static void MX_MDMA_Init(void)
 
   /* Make the linked list circular by connecting the last node to the first */
   if (HAL_MDMA_LinkedList_EnableCircularMode(&hmdma_mdma_channel2_sw_0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Configure MDMA channel MDMA_Channel1 */
-  /* Configure MDMA request hmdma_mdma_channel1_sw_0 on MDMA_Channel1 */
-  hmdma_mdma_channel1_sw_0.Instance = MDMA_Channel1;
-  hmdma_mdma_channel1_sw_0.Init.Request = MDMA_REQUEST_SW;
-  hmdma_mdma_channel1_sw_0.Init.TransferTriggerMode = MDMA_BUFFER_TRANSFER;
-  hmdma_mdma_channel1_sw_0.Init.Priority = MDMA_PRIORITY_HIGH;
-  hmdma_mdma_channel1_sw_0.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  hmdma_mdma_channel1_sw_0.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
-  hmdma_mdma_channel1_sw_0.Init.DestinationInc = MDMA_DEST_INC_WORD;
-  hmdma_mdma_channel1_sw_0.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  hmdma_mdma_channel1_sw_0.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  hmdma_mdma_channel1_sw_0.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  hmdma_mdma_channel1_sw_0.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  hmdma_mdma_channel1_sw_0.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  hmdma_mdma_channel1_sw_0.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  hmdma_mdma_channel1_sw_0.Init.SourceBlockAddressOffset = 0;
-  hmdma_mdma_channel1_sw_0.Init.DestBlockAddressOffset = 0;
-  if (HAL_MDMA_Init(&hmdma_mdma_channel1_sw_0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Initialize MDMA link node according to specified parameters */
-  nodeConfig.Init.Request = MDMA_REQUEST_SW;
-  nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
-  nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  nodeConfig.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
-  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_WORD;
-  nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  nodeConfig.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  nodeConfig.Init.SourceBlockAddressOffset = 0;
-  nodeConfig.Init.DestBlockAddressOffset = 0;
-  nodeConfig.PostRequestMaskAddress = 0;
-  nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = audio_buffer_tx_ch1_l;
-  nodeConfig.DstAddress = sai_buffer_tx;
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_LENGTH;
-  nodeConfig.BlockCount = 1;
-  if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel1_sw_1, &nodeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN mdma_channel1_sw_1 */
-  HAL_MDMA_RegisterCallback(&hmdma_mdma_channel1_sw_0, HAL_MDMA_XFER_BLOCKCPLT_CB_ID, MDMA_TxXferBlockCpltCallback);
-  HAL_MDMA_RegisterCallback(&hmdma_mdma_channel1_sw_0, HAL_MDMA_XFER_ERROR_CB_ID, MDMA_TxErrorCallback);
-  /* USER CODE END mdma_channel1_sw_1 */
-
-  /* Connect a node to the linked list */
-  if (HAL_MDMA_LinkedList_AddNode(&hmdma_mdma_channel1_sw_0, &node_mdma_channel1_sw_1, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Initialize MDMA link node according to specified parameters */
-  nodeConfig.Init.Request = MDMA_REQUEST_SW;
-  nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
-  nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  nodeConfig.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
-  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_WORD;
-  nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  nodeConfig.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  nodeConfig.Init.SourceBlockAddressOffset = 0;
-  nodeConfig.Init.DestBlockAddressOffset = 0;
-  nodeConfig.PostRequestMaskAddress = 0;
-  nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = audio_buffer_tx_ch1_r;
-  nodeConfig.DstAddress = sai_buffer_tx+1;
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_LENGTH;
-  nodeConfig.BlockCount = 1;
-  if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel1_sw_2, &nodeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN mdma_channel1_sw_2 */
-
-  /* USER CODE END mdma_channel1_sw_2 */
-
-  /* Connect a node to the linked list */
-  if (HAL_MDMA_LinkedList_AddNode(&hmdma_mdma_channel1_sw_0, &node_mdma_channel1_sw_2, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Initialize MDMA link node according to specified parameters */
-  nodeConfig.Init.Request = MDMA_REQUEST_SW;
-  nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
-  nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  nodeConfig.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
-  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_WORD;
-  nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  nodeConfig.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  nodeConfig.Init.SourceBlockAddressOffset = 0;
-  nodeConfig.Init.DestBlockAddressOffset = 0;
-  nodeConfig.PostRequestMaskAddress = 0;
-  nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = audio_buffer_tx_ch1_l+AUDIO_BUFFER_LENGTH_HALF;
-  nodeConfig.DstAddress = sai_buffer_tx+SAI_BUFFER_LENGTH_HALF;
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_LENGTH;
-  nodeConfig.BlockCount = 1;
-  if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel1_sw_3, &nodeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN mdma_channel1_sw_3 */
-
-  /* USER CODE END mdma_channel1_sw_3 */
-
-  /* Connect a node to the linked list */
-  if (HAL_MDMA_LinkedList_AddNode(&hmdma_mdma_channel1_sw_0, &node_mdma_channel1_sw_3, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Initialize MDMA link node according to specified parameters */
-  nodeConfig.Init.Request = MDMA_REQUEST_SW;
-  nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
-  nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  nodeConfig.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
-  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_WORD;
-  nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  nodeConfig.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  nodeConfig.Init.SourceBlockAddressOffset = 0;
-  nodeConfig.Init.DestBlockAddressOffset = 0;
-  nodeConfig.PostRequestMaskAddress = 0;
-  nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = audio_buffer_tx_ch1_r+AUDIO_BUFFER_LENGTH_HALF;
-  nodeConfig.DstAddress = sai_buffer_tx+SAI_BUFFER_LENGTH_HALF+1;
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_LENGTH;
-  nodeConfig.BlockCount = 1;
-  if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel1_sw_4, &nodeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN mdma_channel1_sw_4 */
-
-  /* USER CODE END mdma_channel1_sw_4 */
-
-  /* Connect a node to the linked list */
-  if (HAL_MDMA_LinkedList_AddNode(&hmdma_mdma_channel1_sw_0, &node_mdma_channel1_sw_4, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Make the linked list circular by connecting the last node to the first */
-  if (HAL_MDMA_LinkedList_EnableCircularMode(&hmdma_mdma_channel1_sw_0) != HAL_OK)
   {
     Error_Handler();
   }
@@ -1443,57 +1251,53 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 //TODO Adress/Size aligment error, Read error
 void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef *hsai) {
-	HAL_StatusTypeDef status;
-//	CLEAR_BIT(sai_status, SAI_STATUS_RX_HALF_PENDING);
-//	SET_BIT(sai_status, SAI_STATUS_RX_HALF_CPLT);
-//	CLEAR_BIT(sai_status, SAI_STATUS_RX_FULL_CPLT);
-//	SET_BIT(sai_status, SAI_STATUS_RX_FULL_PENDING);
-//
-//	CLEAR_BIT(audio_rx_status, AUDIO_STATUS_HALF_PART);
-//	CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_HALF_PART);
-//	CLEAR_BIT(audio_tx_status, AUDIO_STATUS_HALF_PART);
-//
-//
-//
-//	if(startUp){
-//		startUp = false;
-//		HAL_MDMA_Start_IT(&hmdma_mdma_channel0_sw_0, (uint32_t) sai_buffer_rx, (uint32_t) audio_buffer_rx_ch1_l, AUDIO_BUFFER_SIZE/2, 1);
-//	}
-//	else{
-//		HAL_MDMA_GenerateSWRequest(&hmdma_mdma_channel0_sw_0);
-//	}
-	//memcpy(&sai_buffer_tx[0], &sai_buffer_rx[0], AUDIO_BUFFER_SIZE/2 * sizeof(uint16_t));
+	CLEAR_BIT(sai_status, SAI_STATUS_RX_HALF_PENDING);
+	SET_BIT(sai_status, SAI_STATUS_RX_HALF_CPLT);
+	CLEAR_BIT(sai_status, SAI_STATUS_RX_FULL_CPLT);
+	SET_BIT(sai_status, SAI_STATUS_RX_FULL_PENDING);
+
+	CLEAR_BIT(audio_rx_status, AUDIO_STATUS_HALF_PART);
+	CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_HALF_PART);
+	CLEAR_BIT(audio_tx_status, AUDIO_STATUS_HALF_PART);
+
 
 }
 
 void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai) {
-	HAL_StatusTypeDef status;
-//	CLEAR_BIT(sai_status, SAI_STATUS_RX_FULL_PENDING);
-//	SET_BIT(sai_status, SAI_STATUS_RX_FULL_CPLT);
-//	CLEAR_BIT(sai_status, SAI_STATUS_RX_HALF_CPLT);
-//	SET_BIT(sai_status, SAI_STATUS_RX_HALF_PENDING);
+	CLEAR_BIT(sai_status, SAI_STATUS_RX_FULL_PENDING);
+	SET_BIT(sai_status, SAI_STATUS_RX_FULL_CPLT);
+	CLEAR_BIT(sai_status, SAI_STATUS_RX_HALF_CPLT);
+	SET_BIT(sai_status, SAI_STATUS_RX_HALF_PENDING);
+
+	CLEAR_BIT(audio_rx_status, AUDIO_STATUS_FULL);
+	CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_FULL);
+	CLEAR_BIT(audio_tx_status, AUDIO_STATUS_FULL);
+
+
+}
+
+//void HAL_SAI_TxHalfCpltCallback(SAI_HandleTypeDef *hsai) {
+////	if(READ_BIT(audio_tx_status, AUDIO_STATUS_L_HALF_CPLT) == false
+////			&& READ_BIT(audio_tx_status, AUDIO_STATUS_R_HALF_CPLT) == false){
+////		SET_BIT(memoryTransferError, SAI_TX_UNDERRUN_ERROR);
+////		Error_Handler();
+////	}
+//	//CLEAR_BIT(audio_tx_status, AUDIO_STATUS_FULL);
 //
-//	CLEAR_BIT(audio_rx_status, AUDIO_STATUS_FULL);
-//	CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_FULL);
-//	CLEAR_BIT(audio_tx_status, AUDIO_STATUS_FULL);
+//}
 
-    //memcpy(&sai_buffer_tx[AUDIO_BUFFER_SIZE/2], &sai_buffer_rx[AUDIO_BUFFER_SIZE/2], AUDIO_BUFFER_SIZE/2 * sizeof(uint16_t));
-
-}
-
-void HAL_SAI_TxHalfCpltCallback(SAI_HandleTypeDef *hsai) {
-	//CLEAR_BIT(audio_tx_status, AUDIO_STATUS_FULL);
-
-}
-
-void HAL_SAI_TxCpltCallback(SAI_HandleTypeDef *hsai) {
-	//CLEAR_BIT(audio_tx_status, AUDIO_STATUS_HALF_PART);
-}
+//void HAL_SAI_TxCpltCallback(SAI_HandleTypeDef *hsai) {
+////	if(READ_BIT(audio_tx_status, AUDIO_STATUS_L_CPLT) == false
+////			&& READ_BIT(audio_tx_status, AUDIO_STATUS_R_CPLT) == false){
+////		SET_BIT(memoryTransferError, SAI_TX_UNDERRUN_ERROR);
+////		Error_Handler();
+////	}
+//	//CLEAR_BIT(audio_tx_status, AUDIO_STATUS_HALF_PART);
+//}
 
 void MDMA_RxXferBlockCpltCallback(MDMA_HandleTypeDef *_hdma)
 {
 	transfercounter++;
-	uint32_t transferCounter = transfercounter;
 	uint8_t nextNodeIndex = 0;
 	MDMA_LinkNodeTypeDef* currNode = _hdma->FirstLinkedListNodeAddress;
 	for(; nextNodeIndex < _hdma->LinkedListNodeCounter && currNode != (MDMA_LinkNodeTypeDef*)_hdma->Instance->CLAR; nextNodeIndex++, currNode = (MDMA_LinkNodeTypeDef*)currNode->CLAR)
@@ -1501,9 +1305,9 @@ void MDMA_RxXferBlockCpltCallback(MDMA_HandleTypeDef *_hdma)
 	}
 	switch(nextNodeIndex){
 	case 0:
-		if(READ_BIT(audio_tx_status, AUDIO_STATUS_R_PENDING)){
-			SET_BIT(audio_tx_status, AUDIO_STATUS_R_CPLT);
-			CLEAR_BIT(audio_tx_status, AUDIO_STATUS_R_PENDING);
+		if(READ_BIT(audio_rx_status, AUDIO_STATUS_R_PENDING)){
+			SET_BIT(audio_rx_status, AUDIO_STATUS_R_CPLT);
+			CLEAR_BIT(audio_rx_status, AUDIO_STATUS_R_PENDING);
 		}else{
 			Error_Handler();
 		}
@@ -1525,22 +1329,6 @@ void MDMA_RxXferBlockCpltCallback(MDMA_HandleTypeDef *_hdma)
 		}
 		break;
 	case 3:
-		if(READ_BIT(audio_tx_status, AUDIO_STATUS_L_HALF_PENDING)){
-			SET_BIT(audio_tx_status, AUDIO_STATUS_L_HALF_CPLT);
-			CLEAR_BIT(audio_tx_status, AUDIO_STATUS_L_HALF_PENDING);
-		}else{
-			Error_Handler();
-		}
-		break;
-	case 4:
-		if(READ_BIT(audio_tx_status, AUDIO_STATUS_R_HALF_PENDING)){
-			SET_BIT(audio_tx_status, AUDIO_STATUS_R_HALF_CPLT);
-			CLEAR_BIT(audio_tx_status, AUDIO_STATUS_R_HALF_PENDING);
-		}else{
-			Error_Handler();
-		}
-		break;
-	case 5:
 		if(READ_BIT(audio_rx_status, AUDIO_STATUS_L_PENDING)){
 			SET_BIT(audio_rx_status, AUDIO_STATUS_L_CPLT);
 			CLEAR_BIT(audio_rx_status, AUDIO_STATUS_L_PENDING);
@@ -1548,16 +1336,46 @@ void MDMA_RxXferBlockCpltCallback(MDMA_HandleTypeDef *_hdma)
 			Error_Handler();
 		}
 		break;
-	case 6:
-		if(READ_BIT(audio_rx_status, AUDIO_STATUS_R_PENDING)){
-			SET_BIT(audio_rx_status, AUDIO_STATUS_R_CPLT);
-			CLEAR_BIT(audio_rx_status, AUDIO_STATUS_R_PENDING);
+	default:
+		Error_Handler();
+		break;
+	}
+}
+
+void MDMA_TxXferBlockCpltCallback(MDMA_HandleTypeDef *_hdma)
+{
+	transfercounter++;
+	uint8_t nextNodeIndex = 0;
+	MDMA_LinkNodeTypeDef* currNode = _hdma->FirstLinkedListNodeAddress;
+	for(; nextNodeIndex < _hdma->LinkedListNodeCounter && currNode != (MDMA_LinkNodeTypeDef*)_hdma->Instance->CLAR; nextNodeIndex++, currNode = (MDMA_LinkNodeTypeDef*)currNode->CLAR)
+	{
+	}
+	switch(nextNodeIndex){
+	case 0:
+		if(READ_BIT(audio_tx_status, AUDIO_STATUS_R_PENDING)){
+			SET_BIT(audio_tx_status, AUDIO_STATUS_R_CPLT);
+			CLEAR_BIT(audio_tx_status, AUDIO_STATUS_R_PENDING);
 		}else{
 			Error_Handler();
 		}
 		break;
-
-	case 7:
+	case 1:
+		if(READ_BIT(audio_tx_status, AUDIO_STATUS_L_HALF_PENDING)){
+			SET_BIT(audio_tx_status, AUDIO_STATUS_L_HALF_CPLT);
+			CLEAR_BIT(audio_tx_status, AUDIO_STATUS_L_HALF_PENDING);
+		}else{
+			Error_Handler();
+		}
+		break;
+	case 2:
+		if(READ_BIT(audio_tx_status, AUDIO_STATUS_R_HALF_PENDING)){
+			SET_BIT(audio_tx_status, AUDIO_STATUS_R_HALF_CPLT);
+			CLEAR_BIT(audio_tx_status, AUDIO_STATUS_R_HALF_PENDING);
+		}else{
+			Error_Handler();
+		}
+		break;
+	case 3:
 		if(READ_BIT(audio_tx_status, AUDIO_STATUS_L_PENDING)){
 			SET_BIT(audio_tx_status, AUDIO_STATUS_L_CPLT);
 			CLEAR_BIT(audio_tx_status, AUDIO_STATUS_L_PENDING);
@@ -1565,44 +1383,19 @@ void MDMA_RxXferBlockCpltCallback(MDMA_HandleTypeDef *_hdma)
 			Error_Handler();
 		}
 		break;
+	default:
+		Error_Handler();
+		break;
 	}
 }
 
-void MDMA_TxXferBlockCpltCallback(MDMA_HandleTypeDef *_hdma)
-{
-	uint8_t nextNodeIndex = 0;
-	MDMA_LinkNodeTypeDef* currNode = _hdma->FirstLinkedListNodeAddress;
-	for(; nextNodeIndex < _hdma->LinkedListNodeCounter && currNode != (MDMA_LinkNodeTypeDef*)_hdma->Instance->CLAR; nextNodeIndex++, currNode = (MDMA_LinkNodeTypeDef*)currNode->CLAR)
-	{
-	}
-//	switch(nextNodeIndex){
-//	case 0:
-//		audio_tx_ch1_r_pending = false;
-//		audio_tx_ch1_r_cplt = true;
-//		break;
-//	case 1:
-//		audio_tx_ch1_l_half_pending = false;
-//		audio_tx_ch1_l_half_cplt = true;
-//		break;
-//	case 2:
-//		audio_tx_ch1_r_half_pending = false;
-//		audio_tx_ch1_r_half_cplt = true;
-//		break;
-//	case 3:
-//		audio_tx_ch1_l_pending = false;
-//		audio_tx_ch1_l_cplt = true;
-//		break;
-//	}
-}
 
 void MDMA_RxErrorCallback(MDMA_HandleTypeDef *_hdma){
-uint8_t b = 9;
+	Error_Handler();
 }
 
 void MDMA_TxErrorCallback(MDMA_HandleTypeDef *_hdma){
-
-uint8_t b = 9;
-uint32_t c = _hdma->ErrorCode;
+	Error_Handler();
 }
 
 HAL_StatusTypeDef codecSetup(){

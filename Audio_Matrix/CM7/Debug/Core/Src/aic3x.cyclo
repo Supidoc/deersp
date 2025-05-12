@@ -16,6 +16,6 @@
 ../Core/Src/aic3x.c:712:19:AIC3X_ReadDACPowerControl	4
 ../Core/Src/aic3x.c:739:19:AIC3X_WriteDACPowerControl	4
 ../Core/Src/aic3x.c:767:19:AIC3X_ReadVolControl	6
-../Core/Src/aic3x.c:800:19:AIC3X_WriteVolControl	6
+../Core/Src/aic3x.c:800:19:AIC3X_WriteVolControl	7
 ../Core/Src/aic3x.c:829:19:AIC3X_ReadOutputLevelControl	4
 ../Core/Src/aic3x.c:860:19:AIC3X_WriteOutputLevelControl	4

@@ -818,7 +818,7 @@ if(reg == LDAC_VOL || reg == RDAC_VOL)
 }
 else
 {
-	writeBuffer |= ((~pVolControl->Muted ) << 7) & AIC3X_VOL_MUTED_MASK ;
+	writeBuffer |= ((!pVolControl->Muted ) << 7) & AIC3X_VOL_MUTED_MASK ;
 }
 writeBuffer |= pVolControl->Volume & AIC3X_VOL_MASK;
 

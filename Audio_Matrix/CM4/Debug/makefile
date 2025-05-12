@@ -63,8 +63,8 @@ all: main-build
 main-build: Audio_Matrix_CM4.elf secondary-outputs
 
 # Tool invocations
-Audio_Matrix_CM4.elf Audio_Matrix_CM4.map: $(OBJS) $(USER_OBJS) D:\AppData\CubeIDE\Workspace\Audio_Matrix\CM4\STM32H755ZITX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "Audio_Matrix_CM4.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"D:\AppData\CubeIDE\Workspace\Audio_Matrix\CM4\STM32H755ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Audio_Matrix_CM4.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Audio_Matrix_CM4.elf Audio_Matrix_CM4.map: $(OBJS) $(USER_OBJS) D:\Documents\01_Projects\Deersp\deersp\Audio_Matrix\CM4\STM32H755ZITX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "Audio_Matrix_CM4.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"D:\Documents\01_Projects\Deersp\deersp\Audio_Matrix\CM4\STM32H755ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Audio_Matrix_CM4.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
