@@ -314,8 +314,8 @@ static void MX_MDMA_Init(void)
   nodeConfig.Init.DestBlockAddressOffset = 0;
   nodeConfig.PostRequestMaskAddress = 0;
   nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) &sai_buffer_rx[SAI_BUFFER_LENGTH_HALF-1];
-  nodeConfig.DstAddress = (uint32_t) &audio_buffer_rx_ch1_l[AUDIO_BUFFER_LENGTH_HALF-1];
+  nodeConfig.SrcAddress = (uint32_t) &sai_buffer_rx[SAI_BUFFER_LENGTH_HALF];
+  nodeConfig.DstAddress = (uint32_t) &audio_buffer_rx_ch1_l[AUDIO_BUFFER_LENGTH_HALF];
   nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
   nodeConfig.BlockCount = 1;
   if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel0_sw_2, &nodeConfig) != HAL_OK)
@@ -349,8 +349,8 @@ static void MX_MDMA_Init(void)
   nodeConfig.Init.DestBlockAddressOffset = 0;
   nodeConfig.PostRequestMaskAddress = 0;
   nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) &sai_buffer_rx[SAI_BUFFER_LENGTH_HALF];
-  nodeConfig.DstAddress = (uint32_t) &audio_buffer_rx_ch1_r[AUDIO_BUFFER_LENGTH_HALF-1];
+  nodeConfig.SrcAddress = (uint32_t) &sai_buffer_rx[SAI_BUFFER_LENGTH_HALF+1];
+  nodeConfig.DstAddress = (uint32_t) &audio_buffer_rx_ch1_r[AUDIO_BUFFER_LENGTH_HALF];
   nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
   nodeConfig.BlockCount = 1;
   if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel0_sw_3, &nodeConfig) != HAL_OK)
@@ -482,8 +482,8 @@ static void MX_MDMA_Init(void)
   nodeConfig.Init.DestBlockAddressOffset = 0;
   nodeConfig.PostRequestMaskAddress = 0;
   nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) &audio_buffer_tx_ch1_l[AUDIO_BUFFER_LENGTH_HALF-1];
-  nodeConfig.DstAddress = (uint32_t) &sai_buffer_tx[SAI_BUFFER_LENGTH_HALF-1];
+  nodeConfig.SrcAddress = (uint32_t) &audio_buffer_tx_ch1_l[AUDIO_BUFFER_LENGTH_HALF];
+  nodeConfig.DstAddress = (uint32_t)(uintptr_t) &sai_buffer_tx[SAI_BUFFER_LENGTH_HALF];
   nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
   nodeConfig.BlockCount = 1;
   if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel2_sw_2, &nodeConfig) != HAL_OK)
@@ -517,8 +517,8 @@ static void MX_MDMA_Init(void)
   nodeConfig.Init.DestBlockAddressOffset = 0;
   nodeConfig.PostRequestMaskAddress = 0;
   nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) &audio_buffer_tx_ch1_r[AUDIO_BUFFER_LENGTH_HALF-1];
-  nodeConfig.DstAddress = (uint32_t) &sai_buffer_tx[SAI_BUFFER_LENGTH_HALF];
+  nodeConfig.SrcAddress = (uint32_t) &audio_buffer_tx_ch1_r[AUDIO_BUFFER_LENGTH_HALF];
+  nodeConfig.DstAddress = (uint32_t)(uintptr_t)  &sai_buffer_tx[SAI_BUFFER_LENGTH_HALF+1];
   nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
   nodeConfig.BlockCount = 1;
   if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel2_sw_3, &nodeConfig) != HAL_OK)

@@ -47,7 +47,7 @@
 /* USER CODE BEGIN PM */
 #define AUDIO_CHANNEL_COUNT 2
 #define AUDIO_BUFFER_LENGTH 256
-#define AUDIO_SAMPLE_SIZE sizeof(uint16_t)
+#define AUDIO_SAMPLE_SIZE sizeof(q15_t)
 #define AUDIO_BUFFER_SIZE AUDIO_BUFFER_LENGTH*AUDIO_SAMPLE_SIZE
 #define AUDIO_BUFFER_LENGTH_HALF AUDIO_BUFFER_LENGTH/2
 #define AUDIO_BUFFER_SIZE_HALF AUDIO_BUFFER_SIZE/2
@@ -79,7 +79,7 @@
 #define SAI_TX_UNDERRUN_ERROR 0x1
 
 
-#define NUM_TAPS              29
+#define NUM_TAPS              32
 
 #define ATOMIC_SECTION(code_block)  \
     do {                            \
@@ -106,9 +106,8 @@ MDMA_LinkNodeTypeDef node_mdma_channel0_sw_1;
 MDMA_LinkNodeTypeDef node_mdma_channel0_sw_2;
 MDMA_LinkNodeTypeDef node_mdma_channel0_sw_3;
 MDMA_LinkNodeTypeDef node_mdma_channel0_sw_4;
-
 MDMA_HandleTypeDef hmdma_mdma_channel2_sw_0;
-__attribute__ ((aligned (8)))
+__attribute__ ((aligned (32)))
 MDMA_LinkNodeTypeDef node_mdma_channel2_sw_1;
 MDMA_LinkNodeTypeDef node_mdma_channel2_sw_2;
 MDMA_LinkNodeTypeDef node_mdma_channel2_sw_3;
@@ -118,21 +117,21 @@ AIC3X_HandleTypeDef aic3xHandle;
 
 
 __attribute__ ((aligned (32)))
-volatile uint16_t sai_buffer_rx[SAI_BUFFER_LENGTH];
+volatile q15_t sai_buffer_rx[SAI_BUFFER_LENGTH];
 __attribute__ ((aligned (8)))
-volatile uint16_t sai_buffer_tx[SAI_BUFFER_LENGTH];
+volatile q15_t sai_buffer_tx[SAI_BUFFER_LENGTH];
 
 __attribute__((section(".audiobuffer"), aligned(8), used))
-volatile uint16_t audio_buffer_rx_ch1_l[AUDIO_BUFFER_LENGTH];
+volatile q15_t audio_buffer_rx_ch1_l[AUDIO_BUFFER_LENGTH];
 
 __attribute__((section(".audiobuffer"), aligned(8), used))
-volatile uint16_t audio_buffer_rx_ch1_r[AUDIO_BUFFER_LENGTH];
+volatile q15_t audio_buffer_rx_ch1_r[AUDIO_BUFFER_LENGTH];
 
 __attribute__((section(".audiobuffer"), aligned(8), used))
-volatile uint16_t audio_buffer_tx_ch1_l[AUDIO_BUFFER_LENGTH];
+volatile q15_t audio_buffer_tx_ch1_l[AUDIO_BUFFER_LENGTH];
 
 __attribute__((section(".audiobuffer"), aligned(8), used))
-volatile uint16_t audio_buffer_tx_ch1_r[AUDIO_BUFFER_LENGTH];
+volatile q15_t audio_buffer_tx_ch1_r[AUDIO_BUFFER_LENGTH];
 
 volatile uint8_t audio_rx_status = 0;
 volatile uint8_t audio_dsp_status = 0;
@@ -148,13 +147,17 @@ volatile uint32_t transfercounter = 0;
 
 bool halfComplete = false;
 
-static q15_t firStateQ15[AUDIO_BUFFER_LENGTH_HALF + NUM_TAPS - 1];
+static q15_t firStateQ15_ch1_l[AUDIO_BUFFER_LENGTH_HALF + NUM_TAPS - 1];
+static q15_t firStateQ15_ch1_r[AUDIO_BUFFER_LENGTH_HALF + NUM_TAPS - 1];
+
+arm_fir_instance_q15 firInstanceQ15_ch1_l;
+arm_fir_instance_q15 firInstanceQ15_ch1_r;
 
 const q15_t firCoeffsQ15[NUM_TAPS] = {
-  -0.0018225230f, -0.0015879294f, +0.0000000000f, +0.0036977508f, +0.0080754303f, +0.0085302217f, -0.0000000000f, -0.0173976984f,
-  -0.0341458607f, -0.0333591565f, +0.0000000000f, +0.0676308395f, +0.1522061835f, +0.2229246956f, +0.2504960933f, +0.2229246956f,
-  +0.1522061835f, +0.0676308395f, +0.0000000000f, -0.0333591565f, -0.0341458607f, -0.0173976984f, -0.0000000000f, +0.0085302217f,
-  +0.0080754303f, +0.0036977508f, +0.0000000000f, -0.0015879294f, -0.0018225230f
+	       0,    -3,    -8,     21,     70,      0,   -221,   -222,
+	     345,   842,      0,  -1848,  -1737,   2851,   9745,  13100,
+	   9745,  2851,  -1737,  -1848,      0,   842,    345,   -222,
+	   -221,      0,     70,     21,     -8,     -3,      0,   0
 };
 
 /* USER CODE END PV */
@@ -252,13 +255,14 @@ int main(void)
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  arm_fir_instance_q15 S;
-  //arm_status status;
+  arm_status filterStatus;
 
-  //arm_fir_fast_q15(&S, NUM_TAPS, firCoeffsQ15, firStateQ15, AUDIO_BUFFER_LENGTH_HALF);
+  filterStatus = arm_fir_init_q15(&firInstanceQ15_ch1_l, NUM_TAPS, firCoeffsQ15, firStateQ15_ch1_l, AUDIO_BUFFER_LENGTH_HALF);
+  filterStatus = arm_fir_init_q15(&firInstanceQ15_ch1_r, NUM_TAPS, firCoeffsQ15, firStateQ15_ch1_r, AUDIO_BUFFER_LENGTH_HALF);
 
   HAL_StatusTypeDef status;
   HAL_StatusTypeDef saiStatus;
+
 
 	saiStatus = HAL_SAI_Init(&hsai_BlockA1);
 	saiStatus = HAL_SAI_Init(&hsai_BlockB1);
@@ -269,11 +273,11 @@ int main(void)
 	HAL_Delay(1000);
 
 	status = codecSetup();
-	  if(HAL_OK != HAL_SAI_Receive_DMA(&hsai_BlockA1, (uint8_t*)sai_buffer_rx, sizeof(sai_buffer_tx)/sizeof(uint16_t)))
+	  if(HAL_OK != HAL_SAI_Receive_DMA(&hsai_BlockA1, (uint8_t*)sai_buffer_rx, sizeof(sai_buffer_tx)/AUDIO_SAMPLE_SIZE))
 	  {
 		Error_Handler();
 	  }
-	  if(HAL_OK != HAL_SAI_Transmit_DMA(&hsai_BlockB1, (uint8_t*)sai_buffer_tx, sizeof(sai_buffer_tx)/sizeof(uint16_t)))
+	  if(HAL_OK != HAL_SAI_Transmit_DMA(&hsai_BlockB1, (uint8_t*)sai_buffer_tx, sizeof(sai_buffer_tx)/AUDIO_SAMPLE_SIZE))
 	  {
 		Error_Handler();
 	  }
@@ -364,7 +368,7 @@ int main(void)
 			__enable_irq();
 		}
 
-		//Check for completed audio rx transfers and run dsp
+		//Check for completed audio rx transfers and start dsp
 
 		__disable_irq();
 		if (READ_BIT(audio_rx_status,
@@ -375,12 +379,6 @@ int main(void)
 			SET_BIT(audio_dsp_status, AUDIO_STATUS_L_HALF_PENDING);
 			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_L_HALF_CPLT);
 
-			//Do DSP of left channel first half here
-			memcpy((void*) audio_buffer_rx_ch1_l,
-					(void*) audio_buffer_tx_ch1_l, AUDIO_BUFFER_LENGTH_HALF * AUDIO_SAMPLE_SIZE);
-
-			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_L_HALF_PENDING);
-			SET_BIT(audio_dsp_status, AUDIO_STATUS_L_HALF_CPLT);
 		}
 		else if (READ_BIT(audio_rx_status,
 				AUDIO_STATUS_R_HALF_CPLT) && READ_BIT(audio_dsp_status, AUDIO_STATUS_R_HALF_PENDING) == false
@@ -390,11 +388,6 @@ int main(void)
 
 			SET_BIT(audio_dsp_status, AUDIO_STATUS_R_HALF_PENDING);
 			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_R_HALF_CPLT);
-
-			//Do DSP of right channel first half here
-			memcpy((void*) audio_buffer_rx_ch1_r,
-					(void*) audio_buffer_tx_ch1_r, AUDIO_BUFFER_LENGTH_HALF * AUDIO_SAMPLE_SIZE);
-
 
 		}
 		else if (READ_BIT(audio_rx_status,
@@ -406,12 +399,6 @@ int main(void)
 			SET_BIT(audio_dsp_status, AUDIO_STATUS_L_PENDING);
 			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_L_CPLT);
 
-			//Do DSP of left channel second half here
-			memcpy((void*) audio_buffer_rx_ch1_l + AUDIO_BUFFER_LENGTH_HALF,
-					(void*) audio_buffer_tx_ch1_l + AUDIO_BUFFER_LENGTH_HALF, AUDIO_BUFFER_LENGTH_HALF * AUDIO_SAMPLE_SIZE);
-
-			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_L_PENDING);
-			SET_BIT(audio_dsp_status, AUDIO_STATUS_L_CPLT);
 		}
 		else if (READ_BIT(audio_rx_status,
 				AUDIO_STATUS_R_CPLT) && READ_BIT(audio_dsp_status, AUDIO_STATUS_R_PENDING) == false
@@ -421,13 +408,6 @@ int main(void)
 
 			SET_BIT(audio_dsp_status, AUDIO_STATUS_R_PENDING);
 			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_R_CPLT);
-
-			//Do DSP of left channel second half here
-			memcpy((void*) audio_buffer_rx_ch1_r + AUDIO_BUFFER_LENGTH_HALF,
-					(void*) audio_buffer_tx_ch1_r + AUDIO_BUFFER_LENGTH_HALF, AUDIO_BUFFER_LENGTH_HALF * AUDIO_SAMPLE_SIZE);
-
-			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_R_PENDING);
-			SET_BIT(audio_dsp_status, AUDIO_STATUS_R_CPLT);
 		}
 		else
 		{
@@ -500,56 +480,36 @@ int main(void)
 
 		if(READ_BIT(audio_dsp_status, AUDIO_STATUS_L_HALF_PENDING)){
 
-
+			arm_fir_q15(&firInstanceQ15_ch1_l, (q15_t*) audio_buffer_rx_ch1_l,
+					(q15_t*) audio_buffer_tx_ch1_l, AUDIO_BUFFER_LENGTH_HALF);
 
 			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_L_HALF_PENDING);
 			SET_BIT(audio_dsp_status, AUDIO_STATUS_L_HALF_CPLT);
 		}
 		else if(READ_BIT(audio_dsp_status, AUDIO_STATUS_R_HALF_PENDING)){
 
+			arm_fir_q15(&firInstanceQ15_ch1_r, (q15_t*) audio_buffer_rx_ch1_r,
+					(q15_t*) audio_buffer_tx_ch1_r, AUDIO_BUFFER_LENGTH_HALF);
+
 			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_R_HALF_PENDING);
 			SET_BIT(audio_dsp_status, AUDIO_STATUS_R_HALF_CPLT);
 		}
 		else if(READ_BIT(audio_dsp_status, AUDIO_STATUS_L_PENDING)){
+
+			arm_fir_q15(&firInstanceQ15_ch1_l, (q15_t*) &audio_buffer_rx_ch1_l[AUDIO_BUFFER_LENGTH_HALF],
+					(q15_t*) &audio_buffer_tx_ch1_l[AUDIO_BUFFER_LENGTH_HALF], AUDIO_BUFFER_LENGTH_HALF);
 
 			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_L_PENDING);
 			SET_BIT(audio_dsp_status, AUDIO_STATUS_L_CPLT);
 		}
 		else if(READ_BIT(audio_dsp_status, AUDIO_STATUS_R_PENDING)){
 
+			arm_fir_q15(&firInstanceQ15_ch1_r, (q15_t*) &audio_buffer_rx_ch1_r[AUDIO_BUFFER_LENGTH_HALF],
+					(q15_t*) &audio_buffer_tx_ch1_r[AUDIO_BUFFER_LENGTH_HALF], AUDIO_BUFFER_LENGTH_HALF);
+
 			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_R_PENDING);
 			SET_BIT(audio_dsp_status, AUDIO_STATUS_R_CPLT);
 		}
-//		if(BSP_PB_GetState(BUTTON_USER) == GPIO_PIN_SET){
-//		halfComplete = halfComplete==false;
-//
-//		if(halfComplete){
-//
-//			CLEAR_BIT(sai_status, SAI_STATUS_RX_HALF_PENDING);
-//			SET_BIT(sai_status, SAI_STATUS_RX_HALF_CPLT);
-//			CLEAR_BIT(sai_status, SAI_STATUS_RX_FULL_CPLT);
-//			SET_BIT(sai_status, SAI_STATUS_RX_FULL_PENDING);
-//
-//			CLEAR_BIT(audio_rx_status, AUDIO_STATUS_HALF_PART);
-//			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_HALF_PART);
-//			CLEAR_BIT(audio_tx_status, AUDIO_STATUS_HALF_PART);
-//
-//		}else
-//		{
-//
-//			CLEAR_BIT(sai_status, SAI_STATUS_RX_FULL_PENDING);
-//			SET_BIT(sai_status, SAI_STATUS_RX_FULL_CPLT);
-//			CLEAR_BIT(sai_status, SAI_STATUS_RX_HALF_CPLT);
-//			SET_BIT(sai_status, SAI_STATUS_RX_HALF_PENDING);
-//
-//			CLEAR_BIT(audio_rx_status, AUDIO_STATUS_FULL);
-//			CLEAR_BIT(audio_dsp_status, AUDIO_STATUS_FULL);
-//			CLEAR_BIT(audio_tx_status, AUDIO_STATUS_FULL);
-//
-//		}
-//		HAL_Delay(2000);
-//		HAL_Delay(1);
-//		}
 
 	}
   /* USER CODE END 3 */
@@ -903,8 +863,8 @@ static void MX_MDMA_Init(void)
   nodeConfig.Init.DestBlockAddressOffset = 0;
   nodeConfig.PostRequestMaskAddress = 0;
   nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) &sai_buffer_rx[SAI_BUFFER_LENGTH_HALF-1];
-  nodeConfig.DstAddress = (uint32_t) &audio_buffer_rx_ch1_l[AUDIO_BUFFER_LENGTH_HALF-1];
+  nodeConfig.SrcAddress = (uint32_t) &sai_buffer_rx[SAI_BUFFER_LENGTH_HALF];
+  nodeConfig.DstAddress = (uint32_t) &audio_buffer_rx_ch1_l[AUDIO_BUFFER_LENGTH_HALF];
   nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
   nodeConfig.BlockCount = 1;
   if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel0_sw_2, &nodeConfig) != HAL_OK)
@@ -938,8 +898,8 @@ static void MX_MDMA_Init(void)
   nodeConfig.Init.DestBlockAddressOffset = 0;
   nodeConfig.PostRequestMaskAddress = 0;
   nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) &sai_buffer_rx[SAI_BUFFER_LENGTH_HALF];
-  nodeConfig.DstAddress = (uint32_t) &audio_buffer_rx_ch1_r[AUDIO_BUFFER_LENGTH_HALF-1];
+  nodeConfig.SrcAddress = (uint32_t) &sai_buffer_rx[SAI_BUFFER_LENGTH_HALF+1];
+  nodeConfig.DstAddress = (uint32_t) &audio_buffer_rx_ch1_r[AUDIO_BUFFER_LENGTH_HALF];
   nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
   nodeConfig.BlockCount = 1;
   if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel0_sw_3, &nodeConfig) != HAL_OK)
@@ -1072,8 +1032,8 @@ static void MX_MDMA_Init(void)
   nodeConfig.Init.DestBlockAddressOffset = 0;
   nodeConfig.PostRequestMaskAddress = 0;
   nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) &audio_buffer_tx_ch1_l[AUDIO_BUFFER_LENGTH_HALF-1];
-  nodeConfig.DstAddress = (uint32_t) &sai_buffer_tx[SAI_BUFFER_LENGTH_HALF-1];
+  nodeConfig.SrcAddress = (uint32_t) &audio_buffer_tx_ch1_l[AUDIO_BUFFER_LENGTH_HALF];
+  nodeConfig.DstAddress = (uint32_t)(uintptr_t) &sai_buffer_tx[SAI_BUFFER_LENGTH_HALF];
   nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
   nodeConfig.BlockCount = 1;
   if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel2_sw_2, &nodeConfig) != HAL_OK)
@@ -1107,8 +1067,8 @@ static void MX_MDMA_Init(void)
   nodeConfig.Init.DestBlockAddressOffset = 0;
   nodeConfig.PostRequestMaskAddress = 0;
   nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) &audio_buffer_tx_ch1_r[AUDIO_BUFFER_LENGTH_HALF-1];
-  nodeConfig.DstAddress = (uint32_t) &sai_buffer_tx[SAI_BUFFER_LENGTH_HALF];
+  nodeConfig.SrcAddress = (uint32_t) &audio_buffer_tx_ch1_r[AUDIO_BUFFER_LENGTH_HALF];
+  nodeConfig.DstAddress = (uint32_t)(uintptr_t)  &sai_buffer_tx[SAI_BUFFER_LENGTH_HALF+1];
   nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
   nodeConfig.BlockCount = 1;
   if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel2_sw_3, &nodeConfig) != HAL_OK)
@@ -1363,6 +1323,7 @@ void MDMA_TxXferBlockCpltCallback(MDMA_HandleTypeDef *_hdma)
 		if(READ_BIT(audio_tx_status, AUDIO_STATUS_L_HALF_PENDING)){
 			SET_BIT(audio_tx_status, AUDIO_STATUS_L_HALF_CPLT);
 			CLEAR_BIT(audio_tx_status, AUDIO_STATUS_L_HALF_PENDING);
+
 		}else{
 			Error_Handler();
 		}
