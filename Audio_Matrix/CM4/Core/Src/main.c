@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "string.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -45,26 +46,37 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+#if defined ( __ICCARM__ ) /*!< IAR Compiler */
+#pragma location=0x30000000
+ETH_DMADescTypeDef  DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
+#pragma location=0x30000080
+ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
+
+#elif defined ( __CC_ARM )  /* MDK ARM Compiler */
+
+__attribute__((at(0x30000000))) ETH_DMADescTypeDef  DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
+__attribute__((at(0x30000080))) ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
+
+#elif defined ( __GNUC__ ) /* GNU Compiler */
+
+ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT] __attribute__((section(".RxDescripSection"))); /* Ethernet Rx DMA Descriptors */
+ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((section(".TxDescripSection")));   /* Ethernet Tx DMA Descriptors */
+#endif
+
+ETH_TxPacketConfig TxConfig;
+
+ETH_HandleTypeDef heth;
 
 UART_HandleTypeDef huart3;
 
-MDMA_HandleTypeDef hmdma_mdma_channel0_sw_0;
-MDMA_LinkNodeTypeDef node_mdma_channel0_sw_1;
-MDMA_LinkNodeTypeDef node_mdma_channel0_sw_2;
-MDMA_LinkNodeTypeDef node_mdma_channel0_sw_3;
-MDMA_LinkNodeTypeDef node_mdma_channel0_sw_4;
-MDMA_HandleTypeDef hmdma_mdma_channel2_sw_0;
-MDMA_LinkNodeTypeDef node_mdma_channel2_sw_1;
-MDMA_LinkNodeTypeDef node_mdma_channel2_sw_2;
-MDMA_LinkNodeTypeDef node_mdma_channel2_sw_3;
-MDMA_LinkNodeTypeDef node_mdma_channel2_sw_4;
 /* USER CODE BEGIN PV */
 TCA9548A_HandleTypeDef utca9548a1;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 static void MX_DMA_Init(void);
-static void MX_MDMA_Init(void);
+static void MX_GPIO_Init(void);
+static void MX_ETH_Init(void);
 /* USER CODE BEGIN PFP */
 static void MAIN_TCA9548A_Init(void);
 /* USER CODE END PFP */
@@ -116,7 +128,8 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_DMA_Init();
-  MX_MDMA_Init();
+  MX_GPIO_Init();
+  MX_ETH_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -157,6 +170,55 @@ void PeriphCommonClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief ETH Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ETH_Init(void)
+{
+
+  /* USER CODE BEGIN ETH_Init 0 */
+
+  /* USER CODE END ETH_Init 0 */
+
+   static uint8_t MACAddr[6];
+
+  /* USER CODE BEGIN ETH_Init 1 */
+
+  /* USER CODE END ETH_Init 1 */
+  heth.Instance = ETH;
+  MACAddr[0] = 0x00;
+  MACAddr[1] = 0x80;
+  MACAddr[2] = 0xE1;
+  MACAddr[3] = 0x00;
+  MACAddr[4] = 0x00;
+  MACAddr[5] = 0x00;
+  heth.Init.MACAddr = &MACAddr[0];
+  heth.Init.MediaInterface = HAL_ETH_MII_MODE;
+  heth.Init.TxDesc = DMATxDscrTab;
+  heth.Init.RxDesc = DMARxDscrTab;
+  heth.Init.RxBuffLen = 1536;
+
+  /* USER CODE BEGIN MACADDRESS */
+
+  /* USER CODE END MACADDRESS */
+
+  if (HAL_ETH_Init(&heth) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  memset(&TxConfig, 0 , sizeof(ETH_TxPacketConfig));
+  TxConfig.Attributes = ETH_TX_PACKETS_FEATURES_CSUM | ETH_TX_PACKETS_FEATURES_CRCPAD;
+  TxConfig.ChecksumCtrl = ETH_CHECKSUM_IPHDR_PAYLOAD_INSERT_PHDR_CALC;
+  TxConfig.CRCPadCtrl = ETH_CRC_PAD_INSERT;
+  /* USER CODE BEGIN ETH_Init 2 */
+
+  /* USER CODE END ETH_Init 2 */
+
 }
 
 /**
@@ -219,363 +281,25 @@ static void MX_DMA_Init(void)
 }
 
 /**
-  * Enable MDMA controller clock
-  * Configure MDMA for global transfers
-  *   hmdma_mdma_channel0_sw_0
-  *   node_mdma_channel0_sw_1
-  *   node_mdma_channel0_sw_2
-  *   node_mdma_channel0_sw_3
-  *   node_mdma_channel0_sw_4
-  *   hmdma_mdma_channel2_sw_0
-  *   node_mdma_channel2_sw_1
-  *   node_mdma_channel2_sw_2
-  *   node_mdma_channel2_sw_3
-  *   node_mdma_channel2_sw_4
+  * @brief GPIO Initialization Function
+  * @param None
+  * @retval None
   */
-static void MX_MDMA_Init(void)
+static void MX_GPIO_Init(void)
 {
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
 
-  /* MDMA controller clock enable */
-  __HAL_RCC_MDMA_CLK_ENABLE();
-  /* Local variables */
-  MDMA_LinkNodeConfTypeDef nodeConfig;
+  /* USER CODE END MX_GPIO_Init_1 */
 
-  /* Configure MDMA channel MDMA_Channel0 */
-  /* Configure MDMA request hmdma_mdma_channel0_sw_0 on MDMA_Channel0 */
-  hmdma_mdma_channel0_sw_0.Instance = MDMA_Channel0;
-  hmdma_mdma_channel0_sw_0.Init.Request = MDMA_REQUEST_SW;
-  hmdma_mdma_channel0_sw_0.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  hmdma_mdma_channel0_sw_0.Init.Priority = MDMA_PRIORITY_HIGH;
-  hmdma_mdma_channel0_sw_0.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  hmdma_mdma_channel0_sw_0.Init.SourceInc = MDMA_SRC_INC_WORD;
-  hmdma_mdma_channel0_sw_0.Init.DestinationInc = MDMA_DEST_INC_HALFWORD;
-  hmdma_mdma_channel0_sw_0.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  hmdma_mdma_channel0_sw_0.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  hmdma_mdma_channel0_sw_0.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  hmdma_mdma_channel0_sw_0.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  hmdma_mdma_channel0_sw_0.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  hmdma_mdma_channel0_sw_0.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  hmdma_mdma_channel0_sw_0.Init.SourceBlockAddressOffset = 0;
-  hmdma_mdma_channel0_sw_0.Init.DestBlockAddressOffset = 0;
-  if (HAL_MDMA_Init(&hmdma_mdma_channel0_sw_0) != HAL_OK)
-  {
-    Error_Handler();
-  }
+  /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOG_CLK_ENABLE();
 
-  /* Initialize MDMA link node according to specified parameters */
-  nodeConfig.Init.Request = MDMA_REQUEST_SW;
-  nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
-  nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  nodeConfig.Init.SourceInc = MDMA_SRC_INC_WORD;
-  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_HALFWORD;
-  nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  nodeConfig.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  nodeConfig.Init.SourceBlockAddressOffset = 0;
-  nodeConfig.Init.DestBlockAddressOffset = 0;
-  nodeConfig.PostRequestMaskAddress = 0;
-  nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) &sai_buffer_rx[1];
-  nodeConfig.DstAddress = (uint32_t) &audio_buffer_rx_ch1_r[0];
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
-  nodeConfig.BlockCount = 1;
-  if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel0_sw_1, &nodeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN mdma_channel0_sw_1 */
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
 
-  /* USER CODE END mdma_channel0_sw_1 */
-
-  /* Connect a node to the linked list */
-  if (HAL_MDMA_LinkedList_AddNode(&hmdma_mdma_channel0_sw_0, &node_mdma_channel0_sw_1, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Initialize MDMA link node according to specified parameters */
-  nodeConfig.Init.Request = MDMA_REQUEST_SW;
-  nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
-  nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  nodeConfig.Init.SourceInc = MDMA_SRC_INC_WORD;
-  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_HALFWORD;
-  nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  nodeConfig.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  nodeConfig.Init.SourceBlockAddressOffset = 0;
-  nodeConfig.Init.DestBlockAddressOffset = 0;
-  nodeConfig.PostRequestMaskAddress = 0;
-  nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) &sai_buffer_rx[SAI_BUFFER_LENGTH_HALF];
-  nodeConfig.DstAddress = (uint32_t) &audio_buffer_rx_ch1_l[AUDIO_BUFFER_LENGTH_HALF];
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
-  nodeConfig.BlockCount = 1;
-  if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel0_sw_2, &nodeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN mdma_channel0_sw_2 */
-
-  /* USER CODE END mdma_channel0_sw_2 */
-
-  /* Connect a node to the linked list */
-  if (HAL_MDMA_LinkedList_AddNode(&hmdma_mdma_channel0_sw_0, &node_mdma_channel0_sw_2, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Initialize MDMA link node according to specified parameters */
-  nodeConfig.Init.Request = MDMA_REQUEST_SW;
-  nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
-  nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  nodeConfig.Init.SourceInc = MDMA_SRC_INC_WORD;
-  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_HALFWORD;
-  nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  nodeConfig.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  nodeConfig.Init.SourceBlockAddressOffset = 0;
-  nodeConfig.Init.DestBlockAddressOffset = 0;
-  nodeConfig.PostRequestMaskAddress = 0;
-  nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) &sai_buffer_rx[SAI_BUFFER_LENGTH_HALF+1];
-  nodeConfig.DstAddress = (uint32_t) &audio_buffer_rx_ch1_r[AUDIO_BUFFER_LENGTH_HALF];
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
-  nodeConfig.BlockCount = 1;
-  if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel0_sw_3, &nodeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN mdma_channel0_sw_3 */
-
-  /* USER CODE END mdma_channel0_sw_3 */
-
-  /* Connect a node to the linked list */
-  if (HAL_MDMA_LinkedList_AddNode(&hmdma_mdma_channel0_sw_0, &node_mdma_channel0_sw_3, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Initialize MDMA link node according to specified parameters */
-  nodeConfig.Init.Request = MDMA_REQUEST_SW;
-  nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
-  nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  nodeConfig.Init.SourceInc = MDMA_SRC_INC_WORD;
-  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_HALFWORD;
-  nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  nodeConfig.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  nodeConfig.Init.SourceBlockAddressOffset = 0;
-  nodeConfig.Init.DestBlockAddressOffset = 0;
-  nodeConfig.PostRequestMaskAddress = 0;
-  nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) &sai_buffer_rx[0];
-  nodeConfig.DstAddress = (uint32_t) &audio_buffer_rx_ch1_l[0];
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
-  nodeConfig.BlockCount = 1;
-  if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel0_sw_4, &nodeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN mdma_channel0_sw_4 */
-
-  /* USER CODE END mdma_channel0_sw_4 */
-
-  /* Connect a node to the linked list */
-  if (HAL_MDMA_LinkedList_AddNode(&hmdma_mdma_channel0_sw_0, &node_mdma_channel0_sw_4, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Make the linked list circular by connecting the last node to the first */
-  if (HAL_MDMA_LinkedList_EnableCircularMode(&hmdma_mdma_channel0_sw_0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Configure MDMA channel MDMA_Channel2 */
-  /* Configure MDMA request hmdma_mdma_channel2_sw_0 on MDMA_Channel2 */
-  hmdma_mdma_channel2_sw_0.Instance = MDMA_Channel2;
-  hmdma_mdma_channel2_sw_0.Init.Request = MDMA_REQUEST_SW;
-  hmdma_mdma_channel2_sw_0.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  hmdma_mdma_channel2_sw_0.Init.Priority = MDMA_PRIORITY_MEDIUM;
-  hmdma_mdma_channel2_sw_0.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  hmdma_mdma_channel2_sw_0.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
-  hmdma_mdma_channel2_sw_0.Init.DestinationInc = MDMA_DEST_INC_WORD;
-  hmdma_mdma_channel2_sw_0.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  hmdma_mdma_channel2_sw_0.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  hmdma_mdma_channel2_sw_0.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  hmdma_mdma_channel2_sw_0.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  hmdma_mdma_channel2_sw_0.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  hmdma_mdma_channel2_sw_0.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  hmdma_mdma_channel2_sw_0.Init.SourceBlockAddressOffset = 0;
-  hmdma_mdma_channel2_sw_0.Init.DestBlockAddressOffset = 0;
-  if (HAL_MDMA_Init(&hmdma_mdma_channel2_sw_0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Initialize MDMA link node according to specified parameters */
-  nodeConfig.Init.Request = MDMA_REQUEST_SW;
-  nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_MEDIUM;
-  nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  nodeConfig.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
-  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_WORD;
-  nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  nodeConfig.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  nodeConfig.Init.SourceBlockAddressOffset = 0;
-  nodeConfig.Init.DestBlockAddressOffset = 0;
-  nodeConfig.PostRequestMaskAddress = 0;
-  nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) &audio_buffer_tx_ch1_r[0];
-  nodeConfig.DstAddress = (uint32_t) &sai_buffer_tx[1];
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
-  nodeConfig.BlockCount = 1;
-  if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel2_sw_1, &nodeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN mdma_channel2_sw_1 */
-
-  /* USER CODE END mdma_channel2_sw_1 */
-
-  /* Connect a node to the linked list */
-  if (HAL_MDMA_LinkedList_AddNode(&hmdma_mdma_channel2_sw_0, &node_mdma_channel2_sw_1, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Initialize MDMA link node according to specified parameters */
-  nodeConfig.Init.Request = MDMA_REQUEST_SW;
-  nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_MEDIUM;
-  nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  nodeConfig.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
-  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_WORD;
-  nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  nodeConfig.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  nodeConfig.Init.SourceBlockAddressOffset = 0;
-  nodeConfig.Init.DestBlockAddressOffset = 0;
-  nodeConfig.PostRequestMaskAddress = 0;
-  nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) &audio_buffer_tx_ch1_l[AUDIO_BUFFER_LENGTH_HALF];
-  nodeConfig.DstAddress = (uint32_t)(uintptr_t) &sai_buffer_tx[SAI_BUFFER_LENGTH_HALF];
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
-  nodeConfig.BlockCount = 1;
-  if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel2_sw_2, &nodeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN mdma_channel2_sw_2 */
-
-  /* USER CODE END mdma_channel2_sw_2 */
-
-  /* Connect a node to the linked list */
-  if (HAL_MDMA_LinkedList_AddNode(&hmdma_mdma_channel2_sw_0, &node_mdma_channel2_sw_2, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Initialize MDMA link node according to specified parameters */
-  nodeConfig.Init.Request = MDMA_REQUEST_SW;
-  nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_MEDIUM;
-  nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  nodeConfig.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
-  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_WORD;
-  nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  nodeConfig.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  nodeConfig.Init.SourceBlockAddressOffset = 0;
-  nodeConfig.Init.DestBlockAddressOffset = 0;
-  nodeConfig.PostRequestMaskAddress = 0;
-  nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) &audio_buffer_tx_ch1_r[AUDIO_BUFFER_LENGTH_HALF];
-  nodeConfig.DstAddress = (uint32_t)(uintptr_t)  &sai_buffer_tx[SAI_BUFFER_LENGTH_HALF+1];
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
-  nodeConfig.BlockCount = 1;
-  if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel2_sw_3, &nodeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN mdma_channel2_sw_3 */
-
-  /* USER CODE END mdma_channel2_sw_3 */
-
-  /* Connect a node to the linked list */
-  if (HAL_MDMA_LinkedList_AddNode(&hmdma_mdma_channel2_sw_0, &node_mdma_channel2_sw_3, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Initialize MDMA link node according to specified parameters */
-  nodeConfig.Init.Request = MDMA_REQUEST_SW;
-  nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
-  nodeConfig.Init.Priority = MDMA_PRIORITY_MEDIUM;
-  nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-  nodeConfig.Init.SourceInc = MDMA_SRC_INC_HALFWORD;
-  nodeConfig.Init.DestinationInc = MDMA_DEST_INC_WORD;
-  nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_HALFWORD;
-  nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_HALFWORD;
-  nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  nodeConfig.Init.BufferTransferLength = AUDIO_SAMPLE_SIZE;
-  nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-  nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-  nodeConfig.Init.SourceBlockAddressOffset = 0;
-  nodeConfig.Init.DestBlockAddressOffset = 0;
-  nodeConfig.PostRequestMaskAddress = 0;
-  nodeConfig.PostRequestMaskData = 0;
-  nodeConfig.SrcAddress = (uint32_t) &audio_buffer_tx_ch1_l[0];
-  nodeConfig.DstAddress = (uint32_t) &sai_buffer_tx[0];
-  nodeConfig.BlockDataLength = AUDIO_BUFFER_SIZE_HALF;
-  nodeConfig.BlockCount = 1;
-  if (HAL_MDMA_LinkedList_CreateNode(&node_mdma_channel2_sw_4, &nodeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN mdma_channel2_sw_4 */
-
-  /* USER CODE END mdma_channel2_sw_4 */
-
-  /* Connect a node to the linked list */
-  if (HAL_MDMA_LinkedList_AddNode(&hmdma_mdma_channel2_sw_0, &node_mdma_channel2_sw_4, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* Make the linked list circular by connecting the last node to the first */
-  if (HAL_MDMA_LinkedList_EnableCircularMode(&hmdma_mdma_channel2_sw_0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
