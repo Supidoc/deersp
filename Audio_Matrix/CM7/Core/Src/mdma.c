@@ -7,17 +7,21 @@
 
 #include "mdma.h"
 #include "audio_buffer.h"
+
+
 __attribute__ ((aligned (8)))
 static MDMA_HandleTypeDef MDMA_ch0Sw0;
 __attribute__ ((aligned (8)))
-MDMA_LinkNodeTypeDef MDMA_ch0Nodes[AUDIO_CHANNEL_COUNT];
+MDMA_LinkNodeTypeDef MDMA_ch0Nodes[AUDIO_CHANNEL_COUNT * 2];
 __attribute__ ((aligned (8)))
 static MDMA_HandleTypeDef MDMA_ch1Sw0;
 __attribute__ ((aligned (8)))
-MDMA_LinkNodeTypeDef MDMA_ch1Nodes[AUDIO_CHANNEL_COUNT];
+MDMA_LinkNodeTypeDef MDMA_ch1Nodes[AUDIO_CHANNEL_COUNT * 2];
 
 MDMA_HandleTypeDef *MDMA_hmdmaRxInstance;
 MDMA_HandleTypeDef *MDMA_hmdmaTxInstance;
+
+
 
 void MDMA_init(void)
 {
@@ -46,7 +50,7 @@ void MDMA_init(void)
 		Error_Handler();
 	}
 
-	for (size_t i = 0; i < AUDIO_STEREO_CHANNEL_COUNT;)
+	for (size_t i = 0; i < AUDIO_STEREO_CHANNEL_COUNT; i++)
 	{
 		nodeConfig.Init.Request = MDMA_REQUEST_SW;
 		nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
@@ -113,7 +117,7 @@ void MDMA_init(void)
 			Error_Handler();
 		}
 	}
-	for (size_t i = 0; i < AUDIO_STEREO_CHANNEL_COUNT;)
+	for (size_t i = 0; i < AUDIO_STEREO_CHANNEL_COUNT;i++)
 	{
 		nodeConfig.Init.Request = MDMA_REQUEST_SW;
 		nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
@@ -209,7 +213,7 @@ void MDMA_init(void)
 		Error_Handler();
 	}
 
-	for (size_t i = 0; i < AUDIO_STEREO_CHANNEL_COUNT;)
+	for (size_t i = 0; i < AUDIO_STEREO_CHANNEL_COUNT;i++)
 	{
 		nodeConfig.Init.Request = MDMA_REQUEST_SW;
 		nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
@@ -276,7 +280,7 @@ void MDMA_init(void)
 			Error_Handler();
 		}
 	}
-	for (size_t i = 0; i < AUDIO_STEREO_CHANNEL_COUNT;)
+	for (size_t i = 0; i < AUDIO_STEREO_CHANNEL_COUNT;i++)
 	{
 		nodeConfig.Init.Request = MDMA_REQUEST_SW;
 		nodeConfig.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
@@ -368,15 +372,15 @@ HAL_StatusTypeDef MDMA_registerRxCallbacks(
 	HAL_StatusTypeDef status;
 
 	/* Register transfer callback */
-	status = HAL_MDMA_RegisterCallback(&MDMA_ch0Sw0, HAL_MDMA_XFER_ALL_CB_ID,
-			pXferCallback);
+	status = HAL_MDMA_RegisterCallback(MDMA_hmdmaRxInstance,
+			HAL_MDMA_XFER_BLOCKCPLT_CB_ID, pXferCallback);
 	if (status != HAL_OK)
 	{
 		return status;
 	}
 	/* Register the error callback */
-	return HAL_MDMA_RegisterCallback(&MDMA_ch0Sw0, HAL_MDMA_XFER_ERROR_CB_ID,
-			pErrorCallback);
+	return HAL_MDMA_RegisterCallback(MDMA_hmdmaRxInstance,
+			HAL_MDMA_XFER_ERROR_CB_ID, pErrorCallback);
 }
 
 HAL_StatusTypeDef MDMA_registerTxCallbacks(
@@ -386,20 +390,21 @@ HAL_StatusTypeDef MDMA_registerTxCallbacks(
 	HAL_StatusTypeDef status;
 
 	/* Register transfer callback */
-	status = HAL_MDMA_RegisterCallback(&MDMA_ch1Sw0, HAL_MDMA_XFER_ALL_CB_ID,
-			pXferCallback);
+	status = HAL_MDMA_RegisterCallback(MDMA_hmdmaTxInstance,
+			HAL_MDMA_XFER_BLOCKCPLT_CB_ID, pXferCallback);
 	if (status != HAL_OK)
 	{
 		return status;
 	}
 	/* Register the error callback */
-	return HAL_MDMA_RegisterCallback(&MDMA_ch1Sw0, HAL_MDMA_XFER_ERROR_CB_ID,
+	return HAL_MDMA_RegisterCallback(MDMA_hmdmaTxInstance, HAL_MDMA_XFER_ERROR_CB_ID,
 			pErrorCallback);
 }
 
 HAL_StatusTypeDef MDMA_startRxTransfer(void)
 {
 	/* Start the MDMA transfer */
+
 	return HAL_MDMA_Start_IT(MDMA_hmdmaRxInstance,
 			(uint32_t) ABUF_saiBufferPtrs[0].leftRxFirstHalf,
 			(uint32_t) ABUF_audioBufferPtrs[0].leftRxFirstHalf,
@@ -409,10 +414,12 @@ HAL_StatusTypeDef MDMA_startRxTransfer(void)
 HAL_StatusTypeDef MDMA_startTxTransfer(void)
 {
 	/* Start the MDMA transfer */
+
 	return HAL_MDMA_Start_IT(MDMA_hmdmaTxInstance,
 			(uint32_t) ABUF_audioBufferPtrs[0].leftTxFirstHalf,
 			(uint32_t) ABUF_saiBufferPtrs[0].leftTxFirstHalf,
 			AUDIO_BUFFER_SIZE_HALF, 1);
+
 }
 
 uint8_t MDMA_getCurrentRxChIndex(void)
@@ -420,13 +427,15 @@ uint8_t MDMA_getCurrentRxChIndex(void)
 
 	/* Get the current channel index */
 	uint8_t currNodeIndex = 0;
-	MDMA_LinkNodeTypeDef *currNode = MDMA_hmdmaRxInstance->FirstLinkedListNodeAddress;
+	MDMA_LinkNodeTypeDef *currNode =
+			MDMA_hmdmaRxInstance->FirstLinkedListNodeAddress;
 	for (;
 			currNodeIndex < MDMA_hmdmaRxInstance->LinkedListNodeCounter
-					&& currNode
-							!= (MDMA_LinkNodeTypeDef*) MDMA_hmdmaRxInstance->Instance->CLAR;
+					&& currNode->CLAR
+							!= MDMA_hmdmaRxInstance->Instance->CLAR;
 			currNodeIndex++, currNode = (MDMA_LinkNodeTypeDef*) currNode->CLAR)
-	{}
+	{
+	}
 	return currNodeIndex;
 }
 
@@ -435,12 +444,14 @@ uint8_t MDMA_getCurrentTxChIndex(void)
 
 	/* Get the current channel index */
 	uint8_t currNodeIndex = 0;
-	MDMA_LinkNodeTypeDef *currNode = MDMA_hmdmaTxInstance->FirstLinkedListNodeAddress;
+	MDMA_LinkNodeTypeDef *currNode =
+			MDMA_hmdmaTxInstance->FirstLinkedListNodeAddress;
 	for (;
 			currNodeIndex < MDMA_hmdmaTxInstance->LinkedListNodeCounter
-					&& currNode
-							!= (MDMA_LinkNodeTypeDef*) MDMA_hmdmaTxInstance->Instance->CLAR;
+					&& currNode->CLAR
+							!= MDMA_hmdmaTxInstance->Instance->CLAR;
 			currNodeIndex++, currNode = (MDMA_LinkNodeTypeDef*) currNode->CLAR)
-	{}
+	{
+	}
 	return currNodeIndex;
 }

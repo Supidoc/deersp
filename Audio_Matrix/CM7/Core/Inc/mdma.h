@@ -9,6 +9,7 @@
 #define INC_MDMA_H_
 
 #include "main.h"
+#include "stdbool.h"
 
 void MDMA_init(void);
 HAL_StatusTypeDef MDMA_registerRxCallbacks(void (* pXferCallback)(MDMA_HandleTypeDef *_hmdma), void (* pErrorCallback)(MDMA_HandleTypeDef *_hmdma));

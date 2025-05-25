@@ -26,6 +26,9 @@ static MDMA_HandleTypeDef *ASTAT_hmdmaTxInstance;
 volatile bool ASTAT_isRxTransferComplete = false;
 volatile bool ASTAT_isTxTransferComplete = false;
 
+bool ASTAT_rxXferStartUpCplt = false;
+bool ASTAT_txXferStartupCplt = false;
+
 void ASTAT_init(MDMA_HandleTypeDef *hmdma_rx, MDMA_HandleTypeDef *hmdma_tx)
 {
 	ASTAT_hmdmaRxInstance = hmdma_rx;
@@ -41,8 +44,6 @@ void ASTAT_reset(void)
 		ASTAT_rxStatus[i] = 0;
 		ASTAT_dspStatus[i] = 0;
 		ASTAT_txStatus[i] = 0;
-
-		SET_BIT(ASTAT_rxStatus[i], AUDIO_STATUS_L_HALF_PENDING);
 	}
 
 	ASTAT_saiStatus = 0;
@@ -63,8 +64,17 @@ void ASTAT_rxXferRequestHandler(void)
 		{
 			//TODO Check if previous TX was completed
 			__enable_irq();
+			SET_BIT(ASTAT_rxStatus[i], AUDIO_STATUS_L_HALF_PENDING);
 
-			HAL_MDMA_GenerateSWRequest(ASTAT_hmdmaRxInstance);
+			if (ASTAT_rxXferStartUpCplt)
+			{
+				HAL_MDMA_GenerateSWRequest(ASTAT_hmdmaRxInstance);
+			}
+			else
+			{
+				ASTAT_rxXferStartUpCplt = true;
+				MDMA_startRxTransfer();
+			}
 
 		}
 		else if (READ_BIT(ASTAT_rxStatus[i],
@@ -84,12 +94,6 @@ void ASTAT_rxXferRequestHandler(void)
 			//TODO Check if previous TX was completed
 			__enable_irq();
 
-			if (READ_BIT(ASTAT_txStatus[i], AUDIO_STATUS_L_HALF_CPLT) == false
-					&& READ_BIT(ASTAT_txStatus[i], AUDIO_STATUS_R_HALF_CPLT)
-							== false)
-			{
-				__BKPT();
-			}
 			SET_BIT(ASTAT_rxStatus[i], AUDIO_STATUS_L_PENDING);
 
 			HAL_MDMA_GenerateSWRequest(ASTAT_hmdmaRxInstance);
@@ -177,7 +181,15 @@ void ASTAT_TxXferRequestHandler(void)
 			SET_BIT(ASTAT_txStatus[i], AUDIO_STATUS_L_HALF_PENDING);
 			CLEAR_BIT(ASTAT_txStatus[i], AUDIO_STATUS_L_HALF_CPLT);
 
-			HAL_MDMA_GenerateSWRequest(ASTAT_hmdmaTxInstance);
+			if (ASTAT_txXferStartupCplt)
+			{
+				HAL_MDMA_GenerateSWRequest(ASTAT_hmdmaTxInstance);
+			}
+			else
+			{
+				ASTAT_txXferStartupCplt = true;
+				MDMA_startTxTransfer();
+			}
 		}
 		else if (READ_BIT(ASTAT_dspStatus[i],
 				AUDIO_STATUS_R_HALF_CPLT) && READ_BIT(ASTAT_txStatus[i], AUDIO_STATUS_L_HALF_CPLT)
@@ -229,17 +241,17 @@ void ASTAT_RxXferBlockCpltHandler(void)
 
 		bool isFirstHalf = false;
 		uint8_t currChIndex;
-		if (currNodeIndex / 2 < AUDIO_STEREO_CHANNEL_COUNT)
+		if ((currNodeIndex) / 2 < AUDIO_STEREO_CHANNEL_COUNT)
 		{
 			currChIndex = currNodeIndex / 2;
 			isFirstHalf = true;
 		}
 		else
 		{
-			currChIndex = (currNodeIndex - AUDIO_STEREO_CHANNEL_COUNT) / 2;
+			currChIndex = (currNodeIndex - AUDIO_CHANNEL_COUNT) / 2;
 		}
 
-		bool isLeft = (currNodeIndex % 2) == 0;
+		bool isLeft = (currNodeIndex % 2) == 0 ;
 
 		if (isFirstHalf)
 		{
@@ -321,12 +333,12 @@ void ASTAT_TxXferBlockCpltHandler(void)
 		uint8_t currChIndex;
 		if (currNodeIndex / 2 < AUDIO_STEREO_CHANNEL_COUNT)
 		{
-			currChIndex = currNodeIndex / 2;
+			currChIndex = currNodeIndex / 2 ;
 			isFirstHalf = true;
 		}
 		else
 		{
-			currChIndex = (currNodeIndex - AUDIO_STEREO_CHANNEL_COUNT) / 2;
+			currChIndex = (currNodeIndex - AUDIO_CHANNEL_COUNT) / 2;
 		}
 
 		bool isLeft = (currNodeIndex % 2) == 0;

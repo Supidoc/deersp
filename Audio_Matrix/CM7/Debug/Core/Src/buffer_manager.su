@@ -1,0 +1,3 @@
+../Core/Src/buffer_manager.c:13:17:BUFMGR_requestBuffer	24	static
+../Core/Src/buffer_manager.c:32:17:BUFMGR_reduceBufferRefCount	16	static
+../Core/Src/buffer_manager.c:50:17:BUFMGR_createReference	16	static

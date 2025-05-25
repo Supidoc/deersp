@@ -1,7 +1,7 @@
-../Core/Src/audio_status.c:29:6:ASTAT_init	16	static
-../Core/Src/audio_status.c:37:6:ASTAT_reset	16	static
-../Core/Src/audio_status.c:52:6:ASTAT_rxXferRequestHandler	16	static,ignoring_inline_asm
-../Core/Src/audio_status.c:114:6:ASTAT_DspRequestHandler	16	static,ignoring_inline_asm
-../Core/Src/audio_status.c:165:6:ASTAT_TxXferRequestHandler	16	static,ignoring_inline_asm
-../Core/Src/audio_status.c:222:6:ASTAT_RxXferBlockCpltHandler	16	static
-../Core/Src/audio_status.c:312:6:ASTAT_TxXferBlockCpltHandler	16	static
+../Core/Src/audio_status.c:32:6:ASTAT_init	16	static
+../Core/Src/audio_status.c:40:6:ASTAT_reset	16	static
+../Core/Src/audio_status.c:53:6:ASTAT_rxXferRequestHandler	16	static,ignoring_inline_asm
+../Core/Src/audio_status.c:118:6:ASTAT_DspRequestHandler	16	static,ignoring_inline_asm
+../Core/Src/audio_status.c:169:6:ASTAT_TxXferRequestHandler	16	static,ignoring_inline_asm
+../Core/Src/audio_status.c:234:6:ASTAT_RxXferBlockCpltHandler	16	static
+../Core/Src/audio_status.c:324:6:ASTAT_TxXferBlockCpltHandler	16	static

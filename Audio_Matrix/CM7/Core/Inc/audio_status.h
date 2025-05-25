@@ -45,6 +45,9 @@ extern volatile uint8_t memoryTransferError;
 extern volatile bool ASTAT_isRxTransferComplete;
 extern volatile bool ASTAT_isTxTransferComplete;
 
+extern bool ASTAT_rxXferStartUpCplt;
+extern bool ASTAT_txXferStartupCplt;
+
 void ASTAT_init(MDMA_HandleTypeDef *hmdma_rx, MDMA_HandleTypeDef *hmdma_tx);
 
 void ASTAT_reset(void);

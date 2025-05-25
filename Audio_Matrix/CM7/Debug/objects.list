@@ -2,6 +2,8 @@
 "./Core/Src/aic3x.o"
 "./Core/Src/audio_buffer.o"
 "./Core/Src/audio_status.o"
+"./Core/Src/biquad_node.o"
+"./Core/Src/buffer_manager.o"
 "./Core/Src/dsp.o"
 "./Core/Src/main.o"
 "./Core/Src/mdma.o"

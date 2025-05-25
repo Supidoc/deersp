@@ -14,7 +14,7 @@ static volatile q15_t ABUF_saiBufferTx[SAI_BUFFER_LENGTH] = {0};
 
 ABUF_stereoBufferPtr_t ABUF_saiBufferPtrs[AUDIO_STEREO_CHANNEL_COUNT];
 
-__attribute__((section(".audiobuffer"), aligned(8), used))
+__attribute__((section(".audiobuffer"), aligned(8)))
 static ABUF_stereoBuffer_t ABUF_audioBuffers[AUDIO_STEREO_CHANNEL_COUNT];
 
 ABUF_stereoBufferPtr_t ABUF_audioBufferPtrs[AUDIO_STEREO_CHANNEL_COUNT];
@@ -38,12 +38,12 @@ void ABUF_init(void){
 
 		ABUF_audioBufferPtrs[i].leftRxFirstHalf = &ABUF_audioBuffers[i].leftRx[0];
 		ABUF_audioBufferPtrs[i].rightRxFirstHalf = &ABUF_audioBuffers[i].rightRx[0];
-		ABUF_audioBufferPtrs[i].leftRxSecHalf = &ABUF_audioBuffers[i].leftRx[AUDIO_BUFFER_LENGTH];
-		ABUF_audioBufferPtrs[i].rightRxSecHalf = &ABUF_audioBuffers[i].rightRx[AUDIO_BUFFER_LENGTH];
+		ABUF_audioBufferPtrs[i].leftRxSecHalf = &ABUF_audioBuffers[i].leftRx[AUDIO_BUFFER_LENGTH_HALF];
+		ABUF_audioBufferPtrs[i].rightRxSecHalf = &ABUF_audioBuffers[i].rightRx[AUDIO_BUFFER_LENGTH_HALF];
 		ABUF_audioBufferPtrs[i].leftTxFirstHalf = &ABUF_audioBuffers[i].leftTx[0];
 		ABUF_audioBufferPtrs[i].rightTxFirstHalf = &ABUF_audioBuffers[i].rightTx[0];
-		ABUF_audioBufferPtrs[i].leftTxSecHalf = &ABUF_audioBuffers[i].leftTx[AUDIO_BUFFER_LENGTH];
-		ABUF_audioBufferPtrs[i].rightTxSecHalf = &ABUF_audioBuffers[i].rightTx[AUDIO_BUFFER_LENGTH];
+		ABUF_audioBufferPtrs[i].leftTxSecHalf = &ABUF_audioBuffers[i].leftTx[AUDIO_BUFFER_LENGTH_HALF];
+		ABUF_audioBufferPtrs[i].rightTxSecHalf = &ABUF_audioBuffers[i].rightTx[AUDIO_BUFFER_LENGTH_HALF];
 
 
 	}

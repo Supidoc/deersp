@@ -8,6 +8,8 @@ C_SRCS += \
 ../Core/Src/aic3x.c \
 ../Core/Src/audio_buffer.c \
 ../Core/Src/audio_status.c \
+../Core/Src/biquad_node.c \
+../Core/Src/buffer_manager.c \
 ../Core/Src/dsp.c \
 ../Core/Src/main.c \
 ../Core/Src/mdma.c \
@@ -20,6 +22,8 @@ OBJS += \
 ./Core/Src/aic3x.o \
 ./Core/Src/audio_buffer.o \
 ./Core/Src/audio_status.o \
+./Core/Src/biquad_node.o \
+./Core/Src/buffer_manager.o \
 ./Core/Src/dsp.o \
 ./Core/Src/main.o \
 ./Core/Src/mdma.o \
@@ -32,6 +36,8 @@ C_DEPS += \
 ./Core/Src/aic3x.d \
 ./Core/Src/audio_buffer.d \
 ./Core/Src/audio_status.d \
+./Core/Src/biquad_node.d \
+./Core/Src/buffer_manager.d \
 ./Core/Src/dsp.d \
 ./Core/Src/main.d \
 ./Core/Src/mdma.d \
@@ -48,7 +54,7 @@ Core/Src/%.o Core/Src/%.su Core/Src/%.cyclo: ../Core/Src/%.c Core/Src/subdir.mk
 clean: clean-Core-2f-Src
 
 clean-Core-2f-Src:
-	-$(RM) ./Core/Src/aic3x.cyclo ./Core/Src/aic3x.d ./Core/Src/aic3x.o ./Core/Src/aic3x.su ./Core/Src/audio_buffer.cyclo ./Core/Src/audio_buffer.d ./Core/Src/audio_buffer.o ./Core/Src/audio_buffer.su ./Core/Src/audio_status.cyclo ./Core/Src/audio_status.d ./Core/Src/audio_status.o ./Core/Src/audio_status.su ./Core/Src/dsp.cyclo ./Core/Src/dsp.d ./Core/Src/dsp.o ./Core/Src/dsp.su ./Core/Src/main.cyclo ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/mdma.cyclo ./Core/Src/mdma.d ./Core/Src/mdma.o ./Core/Src/mdma.su ./Core/Src/stm32h7xx_hal_msp.cyclo ./Core/Src/stm32h7xx_hal_msp.d ./Core/Src/stm32h7xx_hal_msp.o ./Core/Src/stm32h7xx_hal_msp.su ./Core/Src/stm32h7xx_it.cyclo ./Core/Src/stm32h7xx_it.d ./Core/Src/stm32h7xx_it.o ./Core/Src/stm32h7xx_it.su ./Core/Src/syscalls.cyclo ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.cyclo ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su
+	-$(RM) ./Core/Src/aic3x.cyclo ./Core/Src/aic3x.d ./Core/Src/aic3x.o ./Core/Src/aic3x.su ./Core/Src/audio_buffer.cyclo ./Core/Src/audio_buffer.d ./Core/Src/audio_buffer.o ./Core/Src/audio_buffer.su ./Core/Src/audio_status.cyclo ./Core/Src/audio_status.d ./Core/Src/audio_status.o ./Core/Src/audio_status.su ./Core/Src/biquad_node.cyclo ./Core/Src/biquad_node.d ./Core/Src/biquad_node.o ./Core/Src/biquad_node.su ./Core/Src/buffer_manager.cyclo ./Core/Src/buffer_manager.d ./Core/Src/buffer_manager.o ./Core/Src/buffer_manager.su ./Core/Src/dsp.cyclo ./Core/Src/dsp.d ./Core/Src/dsp.o ./Core/Src/dsp.su ./Core/Src/main.cyclo ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/mdma.cyclo ./Core/Src/mdma.d ./Core/Src/mdma.o ./Core/Src/mdma.su ./Core/Src/stm32h7xx_hal_msp.cyclo ./Core/Src/stm32h7xx_hal_msp.d ./Core/Src/stm32h7xx_hal_msp.o ./Core/Src/stm32h7xx_hal_msp.su ./Core/Src/stm32h7xx_it.cyclo ./Core/Src/stm32h7xx_it.d ./Core/Src/stm32h7xx_it.o ./Core/Src/stm32h7xx_it.su ./Core/Src/syscalls.cyclo ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.cyclo ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su
 
 .PHONY: clean-Core-2f-Src
 
