@@ -50,7 +50,16 @@ MEMORY
   RAM_D2 (xrw)   : ORIGIN = 0x30000000, LENGTH = 288K
   RAM_D3 (xrw)   : ORIGIN = 0x38000000, LENGTH = 64K
   ITCMRAM (xrw)  : ORIGIN = 0x00000000, LENGTH = 64K
+  OPEN_AMP_SHMEM (xrw) : ORIGIN = 0x38000400, LENGTH = 63K
+  
 }
+
+/* OpenAMP shared memory symbols */
+OPENAMP_SYMBOLS (NOLOAD) :
+{
+  __OPENAMP_region_start__ = ORIGIN(OPEN_AMP_SHMEM);
+  __OPENAMP_region_end__   = ORIGIN(OPEN_AMP_SHMEM) + LENGTH(OPEN_AMP_SHMEM);
+} >OPEN_AMP_SHMEM
 
 /* Sections */
 SECTIONS

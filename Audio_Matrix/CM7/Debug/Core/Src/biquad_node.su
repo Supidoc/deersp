@@ -1,1 +1,2 @@
-../Core/Src/biquad_node.c:11:17:BQD_createNode	16	static
+../Core/Src/biquad_node.c:10:17:BQD_createNode	32	static
+../Core/Src/biquad_node.c:42:17:BQD_processNode	24	static

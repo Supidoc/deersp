@@ -5,58 +5,51 @@
  *      Author: dgrob
  */
 
+
 #include "buffer_manager.h"
-#include "biquad_node.h"
+#include <stddef.h>
+#include <sys/_stdint.h>
 
-BUFMGR_nodeBuffer_t BUFMGR_bufferPool[BUFFER_MANAGER_MAX_BUFFER_COUNT];
+//TODO Check activeRefCount logic for completeness
+BUFMGR_nodeBuffer_t BUFMGR_bufferPool[BUFMGR_MAX_BUFFER_COUNT];
 
-BUFMGR_status_t BUFMGR_requestBuffer(BUFMGR_node_t* node, BUFMGR_nodeType_t nodeType){
+BUFMGR_status_t BUFMGR_requestBuffer(BUFMGR_nodeBuffer_t **buffer)
+{
 
 	// Check if the node is valid
-	if (node == NULL) {
+	if (buffer == NULL)
+	{
 		return BUFMGR_ERROR;
 	}
 
 	// Check if there are free buffers in the pool
-	for (size_t i = 0; i < BUFFER_MANAGER_MAX_BUFFER_COUNT; i++) {
-		if (BUFMGR_bufferPool[i].refCount == 0) {
+	for (size_t i = 0; i < BUFMGR_MAX_BUFFER_COUNT; i++)
+	{
+		if (BUFMGR_bufferPool[i].isUsed == 0)
+		{
 			// Found a free buffer, assign it to the node
-			node->outputBuffer = &BUFMGR_bufferPool[i];
-			node->outputBuffer->refCount = node->outputBuffer->refCount;
+			*buffer = &BUFMGR_bufferPool[i];
+
 			return BUFMGR_OK;
 		}
 	}
 	return BUFMGR_ERROR;
 }
 
-BUFMGR_status_t BUFMGR_reduceBufferRefCount(BUFMGR_node_t* node, BUFMGR_nodeType_t nodeType){
+BUFMGR_status_t BUFMGR_freeBuffer(BUFMGR_nodeBuffer_t *buffer)
+{
 
 	// Check if the node is valid
-	if (node == NULL || node->outputBuffer == NULL) {
+	if (buffer == NULL)
+	{
 		return BUFMGR_ERROR;
 	}
 
-	// Reduce the reference count of the buffer
-	node->outputBuffer->refCount--;
-
-	// If the reference count reaches zero, free the buffer
-	if (node->outputBuffer->refCount == 0) {
-		node->outputBuffer = NULL;
-	}
+	buffer->isUsed = 0;
 
 	return BUFMGR_OK;
 }
 
-BUFMGR_status_t BUFMGR_createReference(BUFMGR_node_t* childNode, BUFMGR_node_t* parentNode){
-
-	// Check if the nodes are valid
-	if (childNode == NULL || parentNode == NULL) {
-		return BUFMGR_ERROR;
-	}
-
-	childNode->refCount++;
-
-	return BUFMGR_OK;
 
 
-}
+

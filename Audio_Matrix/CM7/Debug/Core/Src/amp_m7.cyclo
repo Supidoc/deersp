@@ -1,0 +1,7 @@
+../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/rpmsg.h:147:19:rpmsg_send	2
+../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/rpmsg.h:286:20:rpmsg_init_ept	1
+../Core/Src/amp_m7.c:24:6:AMP_init	2
+../Core/Src/amp_m7.c:48:12:rpmsg_recv_callback	1
+../Core/Src/amp_m7.c:57:6:service_destroy_cb	1
+../Core/Src/amp_m7.c:65:6:new_service_cb	1
+../Core/Src/amp_m7.c:73:6:AMP_sendMessage	2

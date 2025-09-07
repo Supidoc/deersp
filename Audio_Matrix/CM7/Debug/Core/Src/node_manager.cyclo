@@ -1,0 +1,3 @@
+../Core/Src/node_manager.c:12:17:NDMGR_freeNodeBuffer	4
+../Core/Src/node_manager.c:39:17:NDMGR_processNode	14
+../Core/Src/node_manager.c:105:17:NDMGR_requestNodeSlot	4

@@ -25,7 +25,13 @@ SUBDIRS := \
 Common/Src \
 Core/Src \
 Core/Startup \
-Drivers/BSP/STM32H7xx_Nucleo \
+Drivers/BSP/Components \
 Drivers/STM32H7xx_HAL_Driver \
 Drivers/User/Src \
+LWIP/App \
+LWIP/Target \
+Middlewares/Third_Party/FreeRTOS \
+Middlewares/Third_Party/LwIP \
+Middlewares/Third_Party/OpenAMP \
+OPENAMP \
 

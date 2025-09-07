@@ -26,4 +26,7 @@ Common/Src \
 Core/Src \
 Core/Startup \
 Drivers/STM32H7xx_HAL_Driver \
+Middlewares/CMSIS-DSP/CMSIS/DSP/Source \
+Middlewares/Third_Party/OpenAMP \
+OPENAMP \
 

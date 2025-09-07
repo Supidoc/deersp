@@ -1,0 +1,2 @@
+../Core/Src/mix_node.c:10:17:MIX_createNode	32	static
+../Core/Src/mix_node.c:40:17:MIX_processNode	64	static

@@ -18,12 +18,22 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "string.h"
+#include "cmsis_os.h"
+#include "lwip.h"
+#include "openamp.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdbool.h>
+#include "lwip/udp.h"
+#include <string.h>
+#include "lwip/api.h"
+#include "net.h"
+#include "logger.h"
+#include "amp_m4.h"
 
+/* ETH_CODE: add lwiperf, see comment in StartDefaultTask function */
+#include "lwip/apps/lwiperf.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,39 +56,50 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-#if defined ( __ICCARM__ ) /*!< IAR Compiler */
-#pragma location=0x30000000
-ETH_DMADescTypeDef  DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
-#pragma location=0x30000080
-ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
-
-#elif defined ( __CC_ARM )  /* MDK ARM Compiler */
-
-__attribute__((at(0x30000000))) ETH_DMADescTypeDef  DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
-__attribute__((at(0x30000080))) ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
-
-#elif defined ( __GNUC__ ) /* GNU Compiler */
-
-ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT] __attribute__((section(".RxDescripSection"))); /* Ethernet Rx DMA Descriptors */
-ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((section(".TxDescripSection")));   /* Ethernet Tx DMA Descriptors */
-#endif
-
-ETH_TxPacketConfig TxConfig;
-
-ETH_HandleTypeDef heth;
 
 UART_HandleTypeDef huart3;
 
+/* Definitions for defaultTask */
+osThreadId_t defaultTaskHandle;
+const osThreadAttr_t defaultTask_attributes = {
+  .name = "defaultTask",
+  .stack_size = 512 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for UDP_Task */
+osThreadId_t UDP_TaskHandle;
+const osThreadAttr_t UDP_Task_attributes = {
+  .name = "UDP_Task",
+  .stack_size = 1024 * 4,
+  .priority = (osPriority_t) osPriorityBelowNormal,
+};
+/* Definitions for log_task */
+osThreadId_t log_taskHandle;
+const osThreadAttr_t log_task_attributes = {
+  .name = "log_task",
+  .stack_size = 512 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for OPENAMP_Task */
+osThreadId_t OPENAMP_TaskHandle;
+const osThreadAttr_t OPENAMP_Task_attributes = {
+  .name = "OPENAMP_Task",
+  .stack_size = 1024 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 /* USER CODE BEGIN PV */
-TCA9548A_HandleTypeDef utca9548a1;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 static void MX_DMA_Init(void);
 static void MX_GPIO_Init(void);
-static void MX_ETH_Init(void);
+static void MX_USART3_UART_Init(void);
+void StartDefaultTask(void *argument);
+extern void NET_udp_task(void *argument);
+extern void LOG_task(void *argument);
+extern void AMP_Task(void *argument);
+
 /* USER CODE BEGIN PFP */
-static void MAIN_TCA9548A_Init(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -119,6 +140,8 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+  HSEM_COMMON->ICR |= ((uint32_t)__HAL_HSEM_SEMID_TO_MASK(HSEM_ID_0));
+  HAL_NVIC_ClearPendingIRQ(HSEM2_IRQn);
 
   /* USER CODE END Init */
 
@@ -129,10 +152,62 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_DMA_Init();
   MX_GPIO_Init();
-  MX_ETH_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-
   /* USER CODE END 2 */
+
+  /* Init scheduler */
+  osKernelInitialize();
+
+  /* USER CODE BEGIN RTOS_MUTEX */
+  /* add mutexes, ... */
+  /* USER CODE END RTOS_MUTEX */
+
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* add semaphores, ... */
+  /* USER CODE END RTOS_SEMAPHORES */
+
+  /* USER CODE BEGIN RTOS_TIMERS */
+  /* start timers, add new ones, ... */
+  /* USER CODE END RTOS_TIMERS */
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+  /* add queues, ... */
+  LOG_initQueue();
+  /* USER CODE END RTOS_QUEUES */
+
+  /* Create the thread(s) */
+  /* creation of defaultTask */
+  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+
+  /* creation of UDP_Task */
+  UDP_TaskHandle = osThreadNew(NET_udp_task, NULL, &UDP_Task_attributes);
+
+  /* creation of log_task */
+  log_taskHandle = osThreadNew(LOG_task, (void*) &huart3, &log_task_attributes);
+
+  /* creation of OPENAMP_Task */
+  OPENAMP_TaskHandle = osThreadNew(AMP_Task, NULL, &OPENAMP_Task_attributes);
+
+  /* USER CODE BEGIN RTOS_THREADS */
+  /* add threads, ... */
+  if (OPENAMP_TaskHandle == NULL) {
+      LOG_printf("ERROR: OPENAMP_Task creation returned NULL!\r\n");
+  } else {
+      LOG_printf("OPENAMP_Task created: handle=%p\r\n", (void*)OPENAMP_TaskHandle);
+  }
+  LOG_printf("defaultTask=%p UDP_Task=%p log_task=%p OPENAMP_Task=%p\r\n",
+             (void*)defaultTaskHandle, (void*)UDP_TaskHandle, (void*)log_taskHandle, (void*)OPENAMP_TaskHandle);
+  /* USER CODE END RTOS_THREADS */
+
+  /* USER CODE BEGIN RTOS_EVENTS */
+  /* add events, ... */
+  /* USER CODE END RTOS_EVENTS */
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -173,60 +248,11 @@ void PeriphCommonClock_Config(void)
 }
 
 /**
-  * @brief ETH Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_ETH_Init(void)
-{
-
-  /* USER CODE BEGIN ETH_Init 0 */
-
-  /* USER CODE END ETH_Init 0 */
-
-   static uint8_t MACAddr[6];
-
-  /* USER CODE BEGIN ETH_Init 1 */
-
-  /* USER CODE END ETH_Init 1 */
-  heth.Instance = ETH;
-  MACAddr[0] = 0x00;
-  MACAddr[1] = 0x80;
-  MACAddr[2] = 0xE1;
-  MACAddr[3] = 0x00;
-  MACAddr[4] = 0x00;
-  MACAddr[5] = 0x00;
-  heth.Init.MACAddr = &MACAddr[0];
-  heth.Init.MediaInterface = HAL_ETH_MII_MODE;
-  heth.Init.TxDesc = DMATxDscrTab;
-  heth.Init.RxDesc = DMARxDscrTab;
-  heth.Init.RxBuffLen = 1536;
-
-  /* USER CODE BEGIN MACADDRESS */
-
-  /* USER CODE END MACADDRESS */
-
-  if (HAL_ETH_Init(&heth) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  memset(&TxConfig, 0 , sizeof(ETH_TxPacketConfig));
-  TxConfig.Attributes = ETH_TX_PACKETS_FEATURES_CSUM | ETH_TX_PACKETS_FEATURES_CRCPAD;
-  TxConfig.ChecksumCtrl = ETH_CHECKSUM_IPHDR_PAYLOAD_INSERT_PHDR_CALC;
-  TxConfig.CRCPadCtrl = ETH_CRC_PAD_INSERT;
-  /* USER CODE BEGIN ETH_Init 2 */
-
-  /* USER CODE END ETH_Init 2 */
-
-}
-
-/**
   * @brief USART3 Initialization Function
   * @param None
   * @retval None
   */
-void MX_USART3_UART_Init(void)
+static void MX_USART3_UART_Init(void)
 {
 
   /* USER CODE BEGIN USART3_Init 0 */
@@ -295,6 +321,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOG_CLK_ENABLE();
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
@@ -308,41 +335,88 @@ static void MX_GPIO_Init(void)
  * @param None
  * @retval None
  */
-void MAIN_TCA9548A_Init(void) {
-
-//	utca9548a1.hi2c = &hi2c2;
-//	utca9548a1.rst_port = NULL;
-//	utca9548a1.rst_pin = 0u;
-//	utca9548a1.addr_offset = 0u;
-	uint8_t nextNodeIndex = 0;
-	MDMA_LinkNodeTypeDef* currNode = _hdma->FirstLinkedListNodeAddress;
-	for(; nextNodeIndex < _hdma->LinkedListNodeCounter && currNode != (MDMA_LinkNodeTypeDef*)_hdma->Instance->CLAR; nextNodeIndex++, currNode = (MDMA_LinkNodeTypeDef*)currNode->CLAR)
-	{
-	}
-	switch(nextNodeIndex){
-	case 0:
-		audio_rx_ch1_r_cplt = true;
-		audio_rx_ch1_cplt = true;
-		break;
-	case 1:
-
-		audio_rx_ch1_l_half_cplt = true;
-		HAL_MDMA_GenerateSWRequest(&hmdma_mdma_channel0_sw_0);
-		break;
-	case 2:
-		audio_rx_ch1_r_half_cplt = true;
-		audio_rx_ch1_half_cplt = true;
-		break;
-	case 3:
-		audio_rx_ch1_l_cplt = true;
-		HAL_MDMA_GenerateSWRequest(&hmdma_mdma_channel0_sw_0);
-		break;
-	}
-}
 
 
 
 /* USER CODE END 4 */
+
+/* USER CODE BEGIN Header_StartDefaultTask */
+/**
+  * @brief  Function implementing the defaultTask thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_StartDefaultTask */
+void StartDefaultTask(void *argument)
+{
+  /* init code for LWIP */
+  MX_LWIP_Init();
+  /* USER CODE BEGIN 5 */
+//  /* ETH_CODE: Adding lwiperf to measure TCP/IP performance.
+//  	 * iperf 2.0.6 (or older?) is required for the tests. Newer iperf2 versions
+//  	 * might work without data check, but they send different headers.
+//  	 * iperf3 is not compatible at all.
+//  	 * Adding lwiperf.c file to the project is necessary.
+//  	 * The default include path should already contain
+//  	 * 'lwip/apps/lwiperf.h'
+//  	 */
+//      LOCK_TCPIP_CORE();
+//  	lwiperf_start_tcp_server_default(NULL, NULL);
+//
+//  	ip4_addr_t remote_addr;
+//  	IP4_ADDR(&remote_addr, 192, 168, 1, 1);
+//  	lwiperf_start_tcp_client_default(&remote_addr, NULL, NULL);
+//  	UNLOCK_TCPIP_CORE();
+
+  	const char* message = "Hello UDP message!\n\r";
+
+  	osDelay(1000);
+
+  	//NET_start_network();
+
+  	 struct netconn *conn;
+  	    struct netbuf *buf;
+  	    ip_addr_t addr;
+  	    unsigned short port;
+
+  	    IP_ADDR4(&addr, 192, 168, 1, 1); // device IP
+
+
+  	    conn = netconn_new(NETCONN_UDP);
+  	    netconn_bind(conn, IP_ADDR_ANY, 55151);
+
+  	    buf = netbuf_new();
+
+  	    netbuf_ref(buf, message, strlen(message));
+    	while (1) {
+    	  osDelay(10000);
+    	  //NET_udp_send_data(message);
+    	  netconn_sendto(conn, buf, &addr, 55151);
+  	}
+  /* USER CODE END 5 */
+}
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM6 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM6)
+  {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
@@ -354,6 +428,7 @@ void Error_Handler(void)
 	/* User can add his own implementation to report the HAL error return state */
 	__disable_irq();
 	while (1) {
+		__BKPT();
 	}
   /* USER CODE END Error_Handler_Debug */
 }

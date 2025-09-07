@@ -1,0 +1,3 @@
+../Core/Src/node_manager.c:12:17:NDMGR_freeNodeBuffer	24	static
+../Core/Src/node_manager.c:39:17:NDMGR_processNode	32	static
+../Core/Src/node_manager.c:105:17:NDMGR_requestNodeSlot	24	static

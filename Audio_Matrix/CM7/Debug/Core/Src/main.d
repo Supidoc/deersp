@@ -31,10 +31,75 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_sai_ex.h \
  ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart.h \
  ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart_ex.h \
+ ../OPENAMP/openamp.h \
+ ../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/open_amp.h \
+ ../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/rpmsg.h \
+ ../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/compiler.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/mutex.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/system/generic/mutex.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/atomic.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/config.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/list.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/utilities.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/assert.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/system/generic/assert.h \
+ ../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/rpmsg_virtio.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/io.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/compiler.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/compiler/gcc/compiler.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/sys.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/log.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/system/generic/log.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/system/generic/sys.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/errno.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/system/generic/./cortexm/sys.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/cpu.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/processor/arm/cpu.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/system/generic/io.h \
+ ../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/virtio.h \
+ ../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/virtqueue.h \
+ ../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/virtio_ring.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/alloc.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/system/generic/alloc.h \
+ ../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/spinlock.h \
+ ../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/remoteproc.h \
+ ../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/remoteproc_virtio.h \
+ ../OPENAMP/openamp_conf.h ../OPENAMP/mbox_hsem.h \
  D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/arm_math.h \
- ../../Drivers/CMSIS/Include/cmsis_compiler.h ../Core/Src/aic3x.h \
- ../Core/Inc/audio_status.h ../Core/Inc/audio_buffer.h ../Core/Inc/main.h \
- ../Core/Inc/audio_buffer.h ../Core/Inc/mdma.h ../Core/Inc/dsp.h
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/arm_math_types.h \
+ ../../Drivers/CMSIS/Include/cmsis_compiler.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/arm_math_memory.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/none.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/arm_math_types.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/utils.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/basic_math_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/arm_math_memory.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/none.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/utils.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/interpolation_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/bayes_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/statistics_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/basic_math_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/matrix_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/complex_math_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/statistics_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/controller_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/support_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/distance_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/matrix_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/svm_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/svm_defines.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/transform_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/complex_math_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/filtering_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/support_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/quaternion_math_functions.h \
+ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/window_functions.h \
+ ../Core/Src/aic3x.h ../Core/Inc/audio_status.h \
+ ../Core/Inc/audio_buffer.h ../Core/Inc/main.h ../Core/Inc/audio_buffer.h \
+ ../Core/Inc/mdma.h ../Core/Inc/dsp.h ../Core/Inc/amp_m7.h
 ../Core/Inc/main.h:
 ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal.h:
 ../Core/Inc/stm32h7xx_hal_conf.h:
@@ -68,8 +133,73 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_sai_ex.h:
 ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart.h:
 ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart_ex.h:
+../OPENAMP/openamp.h:
+../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/open_amp.h:
+../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/rpmsg.h:
+../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/compiler.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/mutex.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/system/generic/mutex.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/atomic.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/config.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/list.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/utilities.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/assert.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/system/generic/assert.h:
+../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/rpmsg_virtio.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/io.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/compiler.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/compiler/gcc/compiler.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/sys.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/log.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/system/generic/log.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/system/generic/sys.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/errno.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/system/generic/./cortexm/sys.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/cpu.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/processor/arm/cpu.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/system/generic/io.h:
+../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/virtio.h:
+../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/virtqueue.h:
+../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/virtio_ring.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/alloc.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/system/generic/alloc.h:
+../../Middlewares/Third_Party/OpenAMP/libmetal/lib/include/metal/spinlock.h:
+../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/remoteproc.h:
+../../Middlewares/Third_Party/OpenAMP/open-amp/lib/include/openamp/remoteproc_virtio.h:
+../OPENAMP/openamp_conf.h:
+../OPENAMP/mbox_hsem.h:
 D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/arm_math.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/arm_math_types.h:
 ../../Drivers/CMSIS/Include/cmsis_compiler.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/arm_math_memory.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/none.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/arm_math_types.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/utils.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/basic_math_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/arm_math_memory.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/none.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/utils.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/interpolation_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/bayes_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/statistics_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/basic_math_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/matrix_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/complex_math_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/statistics_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/controller_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/support_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/distance_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/matrix_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/svm_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/svm_defines.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/transform_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/complex_math_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/filtering_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/support_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/quaternion_math_functions.h:
+D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Include/dsp/window_functions.h:
 ../Core/Src/aic3x.h:
 ../Core/Inc/audio_status.h:
 ../Core/Inc/audio_buffer.h:
@@ -77,3 +207,4 @@ D:/Documents/01_Projects/Deersp/deersp/Audio_Matrix/CM7/Drivers/CMSIS/DSP/Includ
 ../Core/Inc/audio_buffer.h:
 ../Core/Inc/mdma.h:
 ../Core/Inc/dsp.h:
+../Core/Inc/amp_m7.h:

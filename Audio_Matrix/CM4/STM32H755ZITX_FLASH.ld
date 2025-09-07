@@ -45,7 +45,13 @@ MEMORY
 {
 FLASH (rx)     : ORIGIN = 0x08100000, LENGTH = 1024K
 RAM (xrw)      : ORIGIN = 0x10000000, LENGTH = 288K
+OPENAMP_RSC_TAB (xrw) 	: ORIGIN = 0x38000000, LENGTH = 1K
+  OPEN_AMP_SHMEM (xrw) : ORIGIN = 0x38000400, LENGTH = 63K
 }
+
+ __OPENAMP_region_start__  = ORIGIN(OPEN_AMP_SHMEM);
+ __OPENAMP_region_end__ = ORIGIN(OPEN_AMP_SHMEM) + LENGTH(OPEN_AMP_SHMEM);
+
 
 /* Define output sections */
 SECTIONS
@@ -132,7 +138,18 @@ SECTIONS
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
   } >RAM AT> FLASH
+  
+  /* OpenAMP shared memory symbols */
+	.OPENAMP_SYMBOLS (NOLOAD) :
+	{
+	  __OPENAMP_region_start__ = ORIGIN(OPEN_AMP_SHMEM);
+	  __OPENAMP_region_end__   = ORIGIN(OPEN_AMP_SHMEM) + LENGTH(OPEN_AMP_SHMEM);
+	} >OPEN_AMP_SHMEM
 
+	.resource_table (NOLOAD) :
+	{
+	  KEEP(*(.resource_table*))
+	} >OPEN_AMP_SHMEM
 
   /* Uninitialized data section */
   . = ALIGN(4);
@@ -161,7 +178,10 @@ SECTIONS
     . = ALIGN(8);
   } >RAM
 
-
+     .openamp_section (NOLOAD) : {
+     . = ABSOLUTE(0x38000000);
+     *(.resource_table) 
+  } >OPENAMP_RSC_TAB  AT > FLASH
 
   /* Remove information from the standard libraries */
   /DISCARD/ :

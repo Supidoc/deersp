@@ -21,6 +21,15 @@
 #define SAI_BUFFER_SIZE SAI_BUFFER_LENGTH*AUDIO_SAMPLE_SIZE
 #define SAI_BUFFER_LENGTH_HALF SAI_BUFFER_LENGTH/2
 
+typedef enum _ABUF_channelSide_t{
+	ABUF_CHANNEL_LEFT = 0,
+	ABUF_CHANNEL_RIGHT = 1,
+} ABUF_channelSide_t;
+
+typedef enum _ABUF_bufferHalf_t{
+	ABUF_FIRST_HALF = 0,
+	ABUF_SEC_RIGHT = 1,
+} ABUF_bufferHalf_t;
 
 typedef struct _ABUF_stereoBuffer{
 

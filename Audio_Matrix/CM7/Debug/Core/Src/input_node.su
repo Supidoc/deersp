@@ -1,0 +1,2 @@
+../Core/Src/input_node.c:12:17:INPUT_createNode	32	static
+../Core/Src/input_node.c:52:17:INPUT_processNode	24	static

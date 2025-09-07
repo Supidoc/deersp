@@ -10,6 +10,8 @@
 
 #define NUM_TAPS              32
 
+ABUF_bufferHalf_t DSP_bufferHalf = ABUF_FIRST_HALF;
+
 typedef struct _DSP_filterStates
 {
 	arm_fir_instance_q15 firInstanceQ15_l;
