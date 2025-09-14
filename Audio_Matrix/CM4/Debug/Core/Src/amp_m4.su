@@ -1,2 +1,2 @@
-../Core/Src/amp_m4.c:21:6:AMP_Task	32	static
-../Core/Src/amp_m4.c:60:12:rpmsg_recv_callback	24	static
+../Core/Src/amp_m4.c:21:6:AMP_Task	32	static,ignoring_inline_asm
+../Core/Src/amp_m4.c:66:12:rpmsg_recv_callback	24	static

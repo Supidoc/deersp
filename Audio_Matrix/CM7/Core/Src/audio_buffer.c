@@ -14,7 +14,7 @@ static volatile q15_t ABUF_saiBufferTx[SAI_BUFFER_LENGTH] = {0};
 
 ABUF_stereoBufferPtr_t ABUF_saiBufferPtrs[AUDIO_STEREO_CHANNEL_COUNT];
 
-__attribute__((section(".dtcm_bss"), aligned(8)))
+__attribute__((section(".RAM_DTCM0_Section"), aligned(8)))
 static ABUF_stereoBuffer_t ABUF_audioBuffers[AUDIO_STEREO_CHANNEL_COUNT];
 
 ABUF_stereoBufferPtr_t ABUF_audioBufferPtrs[AUDIO_STEREO_CHANNEL_COUNT];

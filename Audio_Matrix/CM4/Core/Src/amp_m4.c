@@ -28,17 +28,22 @@ void AMP_Task(void *argument)
 
 	/* Initialize OpenAmp and libmetal libraries */
 	if (MX_OPENAMP_Init(RPMSG_REMOTE, NULL) != HAL_OK)
-		Error_Handler();
+	{
+		LOG_printf("Failed to initialize OpenAMP\n");
+		osThreadExit();
+	}
 
 	/* Create an endpoint for rmpsg communication */
 	status = OPENAMP_create_endpoint(&rp_endpoint, RPMSG_CHAN_NAME,
 			RPMSG_ADDR_ANY, rpmsg_recv_callback, NULL);
 	if (status < 0)
 	{
-		Error_Handler();
+		__BKPT(1);
+		LOG_printf("Failed to create rpmsg endpoint\n");
+		osThreadExit();
 	}
 
-
+	LOG_printf("AMP Task initialized and endpoint created.\r\n");
 
 	/* Infinite loop */
 	for (;;)
@@ -46,6 +51,7 @@ void AMP_Task(void *argument)
 		if(message_received)
 		{
 			LOG_printf("AMP received: %s\r\n", received_data_str);
+			message_received=0;
 		}
 		else
 		{

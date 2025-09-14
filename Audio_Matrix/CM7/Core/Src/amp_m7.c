@@ -37,6 +37,9 @@ void AMP_init(void)
 	 		Error_Handler();
 	 	}
 
+
+
+
 	 	/*
 	 	* The rpmsg service is initiate by the remote processor, on A7 new_service_cb
 	 	* callback is received on service creation. Wait for the callback

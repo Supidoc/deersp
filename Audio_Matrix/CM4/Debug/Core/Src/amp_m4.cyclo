@@ -1,2 +1,2 @@
-../Core/Src/amp_m4.c:21:6:AMP_Task	4
-../Core/Src/amp_m4.c:60:12:rpmsg_recv_callback	1
+../Core/Src/amp_m4.c:21:6:AMP_Task	2
+../Core/Src/amp_m4.c:66:12:rpmsg_recv_callback	1

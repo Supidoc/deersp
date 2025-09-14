@@ -39,20 +39,25 @@ _estack = ORIGIN(RAM) + LENGTH(RAM); /* end of RAM */
 /* Generate a link error if heap and stack don't fit into RAM */
 _Min_Heap_Size = 0x200;      /* required amount of heap  */
 _Min_Stack_Size = 0x400; /* required amount of stack */
+/* Start user variables */
+
+/* End user variables */
 
 /* Specify the memory areas */
 MEMORY
 {
-FLASH (rx)     : ORIGIN = 0x08100000, LENGTH = 1024K
-RAM (xrw)      : ORIGIN = 0x10000000, LENGTH = 288K
-OPENAMP_RSC_TAB (xrw) 	: ORIGIN = 0x38000000, LENGTH = 1K
-  OPEN_AMP_SHMEM (xrw) : ORIGIN = 0x38000400, LENGTH = 63K
+/* Start MX regions */
+  TxDescripSection	(xrw)	: ORIGIN = 0x30000080, LENGTH = 128
+  FLASH	(rx)	: ORIGIN = 0x08100000, LENGTH = 1024K
+  OPENAMP	(xrw)	: ORIGIN = 0x38000400, LENGTH = 63K
+  Rx_PoolSection	(xrw)	: ORIGIN = 0x30000100, LENGTH = 1536
+  RAM	(xrw)	: ORIGIN = 0x10000000, LENGTH = 288K
+  OPENAMP_RSC_TAB	(xrw)	: ORIGIN = 0x38000000, LENGTH = 1K
+  RxDescripSection	(xrw)	: ORIGIN = 0x30000000, LENGTH = 128
+/* End MX regions */
 }
-
- __OPENAMP_region_start__  = ORIGIN(OPEN_AMP_SHMEM);
- __OPENAMP_region_end__ = ORIGIN(OPEN_AMP_SHMEM) + LENGTH(OPEN_AMP_SHMEM);
-
-
+__OPENAMP_region_start__  = ORIGIN(OPENAMP);
+__OPENAMP_region_end__ = ORIGIN(OPENAMP) + LENGTH(OPENAMP);
 /* Define output sections */
 SECTIONS
 {
@@ -138,19 +143,6 @@ SECTIONS
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
   } >RAM AT> FLASH
-  
-  /* OpenAMP shared memory symbols */
-	.OPENAMP_SYMBOLS (NOLOAD) :
-	{
-	  __OPENAMP_region_start__ = ORIGIN(OPEN_AMP_SHMEM);
-	  __OPENAMP_region_end__   = ORIGIN(OPEN_AMP_SHMEM) + LENGTH(OPEN_AMP_SHMEM);
-	} >OPEN_AMP_SHMEM
-
-	.resource_table (NOLOAD) :
-	{
-	  KEEP(*(.resource_table*))
-	} >OPEN_AMP_SHMEM
-
   /* Uninitialized data section */
   . = ALIGN(4);
   .bss :
@@ -177,13 +169,15 @@ SECTIONS
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
   } >RAM
+  
+ /*  Unitialized OPENAMP Section [MMT section] */
+.openamp_section (NOLOAD) :
+		{
+		. = ABSOLUTE(0x38000000);
+		*(.resource_table)
+		} > OPENAMP_RSC_TAB AT >FLASH
 
-     .openamp_section (NOLOAD) : {
-     . = ABSOLUTE(0x38000000);
-     *(.resource_table) 
-  } >OPENAMP_RSC_TAB  AT > FLASH
-
-  /* Remove information from the standard libraries */
+/* Remove information from the standard libraries */
   /DISCARD/ :
   {
     libc.a ( * )
@@ -192,6 +186,45 @@ SECTIONS
   }
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
+
+ /*  Unitialized TxDescripSection section into "TxDescripSection" TxDescripSection type memory [MMT section] */
+ .TxDescripSection_Section :
+  {
+    . = ALIGN(4);
+    KEEP (*(.TxDescripSection_Section))
+    . = ALIGN(4);
+  } >TxDescripSection
+
+ /*  Unitialized OPENAMP section into "OPENAMP" OPENAMP type memory [MMT section] */
+ .OPENAMP_Section :
+  {
+    . = ALIGN(4);
+    KEEP (*(.OPENAMP_Section))
+    . = ALIGN(4);
+  } >OPENAMP
+
+ /*  Unitialized Rx_PoolSection section into "Rx_PoolSection" Rx_PoolSection type memory [MMT section] */
+ .Rx_PoolSection_Section :
+  {
+    . = ALIGN(4);
+    KEEP (*(.Rx_PoolSection_Section))
+    . = ALIGN(4);
+  } >Rx_PoolSection
+
+ /*  Unitialized RxDescripSection section into "RxDescripSection" RxDescripSection type memory [MMT section] */
+ .RxDescripSection_Section :
+  {
+    . = ALIGN(4);
+    KEEP (*(.RxDescripSection_Section))
+    . = ALIGN(4);
+  } >RxDescripSection
+
+ /*  Unitialized OPENAMP_RSC_TAB section into "OPENAMP_RSC_TAB" OPENAMP_RSC_TAB type memory [MMT section] */
+ .OPENAMP_RSC_TAB_Section :
+  {
+    . = ALIGN(4);
+    KEEP (*(.OPENAMP_RSC_TAB_Section))
+    . = ALIGN(4);
+  } >OPENAMP_RSC_TAB
+
 }
-
-
